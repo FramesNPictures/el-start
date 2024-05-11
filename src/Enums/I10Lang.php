@@ -1,6 +1,6 @@
 <?php
 
-namespace FNP\ElStart\Enums;
+namespace Fnp\ElStart\Enums;
 
 enum I10Lang
 {

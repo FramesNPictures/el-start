@@ -1,6 +1,6 @@
 <?php
 
-namespace FNP\ElStart;
+namespace Fnp\ElStart;
 
 use Fnp\ElModule\ElModule;
 use Fnp\ElModule\Features\ModuleConfigOverride;

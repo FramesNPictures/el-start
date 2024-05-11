@@ -1,8 +1,8 @@
 <?php
 
-namespace FNP\ElStart\Helpers;
+namespace Fnp\ElStart\Helpers;
 
-use FNP\ElStart\Enums\I10Lang;
+use Fnp\ElStart\Enums\I10Lang;
 use Illuminate\Contracts\Database\Eloquent\Castable;
 use Illuminate\Contracts\Database\Eloquent\CastsAttributes;
 use Illuminate\Contracts\Support\Jsonable;
