@@ -63,9 +63,9 @@ class LogFmt
         $func = $caller['function'] ?? null;
 
         if ($func) {
-            return '<' . $class . '::' . $func . '(' . implode(', ', $params) . ')>';
+            return $class . '::' . $func . '(' . implode(', ', $params) . ')';
         }
 
-        return '<' . $class . '>';
+        return $class;
     }
 }
