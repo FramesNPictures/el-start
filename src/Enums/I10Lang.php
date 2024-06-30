@@ -41,6 +41,11 @@ enum I10Lang
         return constant("self::$lang");
     }
 
+    public static function from($lang) {
+        $lang = strtoupper($lang);
+        return constant("self::$lang");
+    }
+
     public function name(): string
     {
         return match ($this) {

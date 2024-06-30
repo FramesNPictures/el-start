@@ -26,6 +26,25 @@ class I10String implements Castable, Jsonable
         }
     }
 
+    public static function blank()
+    {
+        return new static();
+    }
+
+    public static function fromArray(array $elements)
+    {
+        $s = new static();
+        foreach ($elements as $lang => $value) {
+            $s->set(I10Lang::from($lang), $value);
+        }
+        return $s;
+    }
+
+    public static function fromString(string $string)
+    {
+        return new static($string);
+    }
+
     public function set(I10Lang $lang, string $value): self
     {
         $this->elements[$lang->name] = $value;
