@@ -1,26 +1,23 @@
 {
     "name": "framesnpictures/el-start",
-    "description": "Opinionated Laravel Start Package",
+    "description": "Fresh Laravel Start Setup",
     "type": "library",
+    "require": {
+        "php": ">=8.1",
+        "framesnpictures/el-module": "^0.13.0"
+    },
+    "require-dev": {
+        "laravel/framework": "^11.1"
+    },
     "authors": [
         {
             "name": "Chris Cynarski",
             "email": "chris@cynarski.net"
         }
     ],
-    "require": {
-        "framesnpictures/el-module": "^0.13.0"
-    },
     "autoload": {
         "psr-4": {
-            "Fnp\\ElStart\\": "src/"
-        }
-    },
-    "extra": {
-        "laravel": {
-            "providers": [
-                "Fnp\\ElStart\\ElStartModule"
-            ]
+            "FNP\\ElStart\\": "src/"
         }
     }
 }
