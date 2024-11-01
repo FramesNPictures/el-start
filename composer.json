@@ -1,23 +1,30 @@
 {
-    "name": "framesnpictures/el-start",
-    "description": "Fresh Laravel Start Setup",
-    "type": "library",
-    "require": {
-        "php": ">=8.1",
-        "framesnpictures/el-module": "^0.13.0"
-    },
-    "require-dev": {
-        "laravel/framework": "^11.1"
-    },
-    "authors": [
-        {
-            "name": "Chris Cynarski",
-            "email": "chris@cynarski.net"
-        }
-    ],
-    "autoload": {
-        "psr-4": {
-            "FNP\\ElStart\\": "src/"
-        }
+  "name": "framesnpictures/el-start",
+  "description": "Fresh Laravel Start Setup",
+  "type": "library",
+  "require": {
+    "php": ">=8.1",
+    "framesnpictures/el-module": "^0.13.0"
+  },
+  "require-dev": {
+    "laravel/framework": "^11.1"
+  },
+  "authors": [
+    {
+      "name": "Chris Cynarski",
+      "email": "chris@cynarski.net"
     }
+  ],
+  "autoload": {
+    "psr-4": {
+      "FNP\\ElStart\\": "src/"
+    }
+  },
+  "extra": {
+    "laravel": {
+      "providers": [
+        "FNP\\ElStart\\ElStartModule"
+      ]
+    }
+  }
 }
