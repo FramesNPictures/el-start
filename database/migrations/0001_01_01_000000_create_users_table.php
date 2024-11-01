@@ -27,15 +27,6 @@ return new class extends Migration
             $table->dateTime('expires_at')->nullable();
             $table->timestamp('created_at')->nullable();
         });
-
-        Schema::create('app_sessions', function (Blueprint $table) {
-            $table->string('id')->primary();
-            $table->foreignId('user_id')->nullable()->index();
-            $table->string('ip_address', 45)->nullable();
-            $table->text('user_agent')->nullable();
-            $table->longText('payload');
-            $table->integer('last_activity')->index();
-        });
     }
 
     /**
@@ -45,6 +36,5 @@ return new class extends Migration
     {
         Schema::dropIfExists('users');
         Schema::dropIfExists('app_users_tokens');
-        Schema::dropIfExists('app_sessions');
     }
 };
