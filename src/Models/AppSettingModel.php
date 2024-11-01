@@ -10,7 +10,7 @@ class AppSettingModel extends Model
 {
     const TABLE_NAME = 'app_settings';
     protected $table = self::TABLE_NAME;
-    protected $fillable = ['key', 'value'];
+    protected $fillable = ['uuid', 'key', 'value'];
     public $incrementing = false;
     protected $keyType = 'string';
 
