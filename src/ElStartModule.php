@@ -4,8 +4,10 @@ namespace FNP\ElStart;
 
 use Fnp\ElModule\ElModule;
 use Fnp\ElModule\Features\ModuleConfigOverride;
+use Fnp\ElModule\Features\ModuleConsoleCommands;
 use Fnp\ElModule\Features\ModuleMigrations;
 use Fnp\ElModule\Features\ModuleRoutesWeb;
+use FNP\ElStart\Console\AppSettingCommand;
 use FNP\ElStart\Models\DB\AppUser;
 use Illuminate\Foundation\Auth\EmailVerificationRequest;
 use Illuminate\Http\Request;
@@ -16,6 +18,7 @@ class ElStartModule extends ElModule
     use ModuleConfigOverride;
     use ModuleMigrations;
     use ModuleRoutesWeb;
+    use ModuleConsoleCommands;
 
     public function defineConfigOverride(): array
     {
@@ -53,5 +56,12 @@ class ElStartModule extends ElModule
 
             return redirect('/app');
         })->middleware(['auth', 'signed'])->name('verification.verify');
+    }
+
+    public function defineConsoleCommands(): array
+    {
+        return [
+            AppSettingCommand::class
+        ];
     }
 }
