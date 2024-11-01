@@ -8,7 +8,7 @@ use Fnp\ElModule\Features\ModuleConsoleCommands;
 use Fnp\ElModule\Features\ModuleMigrations;
 use Fnp\ElModule\Features\ModuleRoutesWeb;
 use FNP\ElStart\Console\AppSettingCommand;
-use FNP\ElStart\Models\DB\AppUser;
+use FNP\ElStart\Models\AppUser;
 use Illuminate\Foundation\Auth\EmailVerificationRequest;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Router;

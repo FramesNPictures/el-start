@@ -1,6 +1,6 @@
 <?php
 
-namespace FNP\ElStart\Models\DB;
+namespace FNP\ElStart\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
