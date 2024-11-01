@@ -13,6 +13,7 @@ return new class extends Migration
     {
         Schema::create('app_users', function (Blueprint $table) {
             $table->id();
+            $table->char('uuid',16)->charset('binary')->unique();
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
@@ -20,12 +21,16 @@ return new class extends Migration
             $table->timestamps();
         });
 
-        Schema::create('app_users_tokens', function (Blueprint $table) {
-            $table->unsignedBigInteger('app_user_id')->index();
-            $table->integer('token_type')->index();
-            $table->string('token',30)->index();
+        Schema::create('app_users_details', function (Blueprint $table) {
+            $table->unsignedBigInteger('user_id')->index();
+            $table->char('key', 32)->charset('binary')->index();
+            $table->text('value');
+            $table->timestamps();
             $table->dateTime('expires_at')->nullable();
-            $table->timestamp('created_at')->nullable();
+            $table->primary(['user_id', 'key']);
+            $table->index('created_at');
+            $table->index('updated_at');
+            $table->index('expires_at');
         });
     }
 
