@@ -39,10 +39,9 @@ return new class extends Migration
             $table->unsignedBigInteger('user_id')->index();
             $table->integer('type')->index();
             $table->integer('tab')->index()->default(0);
-            $table->text('value');
             $table->timestamps();
             $table->dateTime('expires_at')->nullable();
-            $table->primary(['user_id', 'key']);
+            $table->primary(['user_id', 'type', 'tab']);
             $table->index('created_at');
             $table->index('updated_at');
             $table->index('expires_at');
