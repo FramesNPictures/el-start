@@ -2,6 +2,7 @@
 
 namespace FNP\ElStart\Helpers;
 
+use FNP\ElStart\Casts\BinToUuid;
 use FNP\ElStart\Models\AppObjectModel;
 
 class AppObjects
@@ -13,8 +14,8 @@ class AppObjects
         }
 
         $record = AppObjectModel::updateOrCreate(
-            ['uuid' => $objectPath::registrationUUID()],
-            ['uuid' => $objectPath::registrationUUID(), 'class' => $objectPath],
+            ['uuid' => BinToUuid::toBin($objectPath::registrationUUID())],
+            ['uuid' => BinToUuid::toBin($objectPath::registrationUUID()), 'class' => $objectPath],
         );
 
         return $record;
