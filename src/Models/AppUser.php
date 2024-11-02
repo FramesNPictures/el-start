@@ -51,8 +51,8 @@ class AppUser extends Authenticatable
         ];
     }
 
-    protected function newFactory()
+    protected static function newFactory()
     {
-        return new AppUserFactory();
+        return AppUserFactory::new();
     }
 }
