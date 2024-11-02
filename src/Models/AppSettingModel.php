@@ -2,7 +2,6 @@
 
 namespace FNP\ElStart\Models;
 
-use FNP\ElStart\Casts\BinToHex;
 use FNP\ElStart\Casts\BinToUuid;
 use Illuminate\Database\Eloquent\Model;
 
@@ -18,7 +17,6 @@ class AppSettingModel extends Model
     {
         return [
             'uuid' => BinToUuid::class,
-            'key' => BinToHex::class,
         ];
     }
 }
