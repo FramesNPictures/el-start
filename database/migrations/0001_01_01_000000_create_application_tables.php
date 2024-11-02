@@ -15,7 +15,7 @@ return new class extends Migration {
         Schema::create('app_settings', function (Blueprint $table) {
             $table->char('uuid', 16)
                 ->charset('binary')
-                ->default(DB::raw('UUID_TO_BIN(UUID())'))
+                ->default(DB::raw("UNHEX(REPLACE(UUID(), '-', ''))"))
                 ->primary();
             $table->string('key', 128)->index();
             $table->text('value');
