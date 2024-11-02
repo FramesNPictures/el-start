@@ -15,7 +15,7 @@ class AppObjects
 
         $record = AppObjectModel::updateOrCreate(
             ['uuid' => BinToUuid::toBin($objectPath::registrationUUID())],
-            ['uuid' => BinToUuid::toBin($objectPath::registrationUUID()), 'class' => $objectPath],
+            ['uuid' => $objectPath::registrationUUID(), 'class' => $objectPath],
         );
 
         return $record;
