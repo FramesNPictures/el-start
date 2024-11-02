@@ -42,10 +42,10 @@ class AppUserModelFactory extends Factory
         return $this->afterMaking(function (AppUserModel $user) {
             // ...
         })->afterCreating(function (AppUserModel $user) {
-            UserDetails::set($user, UserDetailType::FIRST_NAME, fake()->name());
-            UserDetails::set($user, UserDetailType::LAST_NAME, fake()->lastName());
-            UserDetails::set($user, UserDetailType::PHONE_MOBILE, fake()->phoneNumber());
-            UserDetails::set($user, UserDetailType::ADDRESS, fake()->address());
+//            UserDetails::set($user, UserDetailType::FIRST_NAME, fake()->name());
+//            UserDetails::set($user, UserDetailType::LAST_NAME, fake()->lastName());
+//            UserDetails::set($user, UserDetailType::PHONE_MOBILE, fake()->phoneNumber());
+//            UserDetails::set($user, UserDetailType::ADDRESS, fake()->address());
         });
     }
 }
