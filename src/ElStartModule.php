@@ -27,6 +27,8 @@ class ElStartModule extends ElModule
             return (string) '\\FNP\\ElStart\\Models\\'.
                 (class_basename($name)).'Factory';
         });
+
+        parent::boot();
     }
 
     public function defineConfigOverride(): array

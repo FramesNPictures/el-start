@@ -50,9 +50,4 @@ class AppUser extends Authenticatable
             'auth_type' => UserAuthType::class,
         ];
     }
-
-    protected static function newFactory()
-    {
-        return AppUserFactory::new();
-    }
 }
