@@ -4,46 +4,54 @@ namespace FNP\ElStart\Helpers;
 
 use FNP\ElStart\Models\AppSettingModel;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Str;
 
 class AppSetting
 {
     public static function getRaw(string $key, $default = null): mixed
     {
-        $uuid = md5(strtolower($key));
-        $rec = AppSettingModel::where('uuid', $uuid)->first();
+        $rec = AppSettingModel::where('key', $key)->first();
 
         if (!$rec) {
             return $default;
         }
 
-        return base64_decode(decrypt($rec->value));
+        return $rec->value;
     }
 
     public static function get(string $key, $default = null): mixed
     {
-        $uuid = md5(strtolower($key));
-        return Cache::remember(__CLASS__ . $uuid, 60 * 60, function () use ($default, $key) {
+        $cacheTTL = 60 * 60 * 24; // An hour
+        $cacheKey = self::getCacheKey($key);
+        return Cache::remember($cacheKey, $cacheTTL, function () use ($default, $key) {
             return self::getRaw($key, $default);
         });
     }
 
     public static function set(string $key, $value)
     {
-        $uuid = md5(strtolower($key));
-        $value = base64_encode(encrypt($value));
+        $cacheTTL = 60 * 60 * 24; // An hour
+        $cacheKey = self::getCacheKey($key);
         $rec = AppSettingModel::updateOrCreate(
-            ['uuid' => $uuid],
-            ['uuid' => $uuid, 'value' => $value]
+            ['key' => $key],
+            ['key' => $key, 'value' => $value]
         );
-
-        Cache::set(__CLASS__ . $uuid, $value);
+        Cache::set($cacheKey, $value, $cacheTTL);
     }
 
     public static function forget(string $key)
     {
-        $uuid = md5(strtolower($key));
+        $cacheKey = self::getCacheKey($key);
         AppSettingModel::where('uuid', $key)->delete();
-        Cache::forget(__CLASS__ . $uuid);
+        Cache::forget($cacheKey);
+    }
+
+    /**
+     * @param string $key
+     * @return string
+     */
+    public static function getCacheKey(string $key): string
+    {
+        $cacheKey = implode('//', [__CLASS__, $key]);
+        return $cacheKey;
     }
 }

@@ -23,4 +23,9 @@ class BinToUuid implements Castable
             }
         };
     }
+
+    public static function toBin($value)
+    {
+        return Uuid::fromString($value)->getBytes();
+    }
 }
