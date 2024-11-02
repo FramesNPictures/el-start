@@ -1,5 +1,7 @@
 <?php
 
+use FNP\ElStart\Enums\UserAuthType;
+use FNP\ElStart\Enums\UserStatus;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -13,8 +15,13 @@ return new class extends Migration
     {
         Schema::create('app_users', function (Blueprint $table) {
             $table->id();
-            $table->char('uuid',16)->charset('binary')->unique();
+            $table->char('uuid',16)
+                ->charset('binary')
+                ->default(DB::raw('(UUID_TO_BIN(UUID()))'))
+                ->unique();
             $table->string('email')->unique();
+            $table->integer('auth_type')->default(UserAuthType::PASSWORD->value);
+            $table->integer('status')->default(UserStatus::ACTIVE->value);
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
             $table->rememberToken();

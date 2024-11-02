@@ -2,6 +2,7 @@
 
 namespace FNP\ElStart\Models;
 
+use FNP\ElStart\Enums\UserAuthType;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -45,7 +46,8 @@ class AppUser extends Authenticatable
     {
         return [
             'email_verified_at' => 'datetime',
-            'password'          => 'hashed',
+            'password' => 'hashed',
+            'auth_type' => UserAuthType::class,
         ];
     }
 }
