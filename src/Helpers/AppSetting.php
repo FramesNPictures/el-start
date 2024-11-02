@@ -21,27 +21,28 @@ class AppSetting
     public static function get(string $key, $default = null): mixed
     {
         $cacheTTL = 60 * 60 * 24; // An hour
-        $cacheKey = self::getCacheKey($key);
-        return Cache::remember($cacheKey, $cacheTTL, function () use ($default, $key) {
-            return self::getRaw($key, $default);
-        });
+        return Cache::remember(
+            self::cacheKey($key), $cacheTTL,
+            function () use ($default, $key) {
+                return self::getRaw($key, $default);
+            }
+        );
     }
 
     public static function set(string $key, $value)
     {
         $cacheTTL = 60 * 60 * 24; // An hour
-        $cacheKey = self::getCacheKey($key);
         $rec = AppSettingModel::updateOrCreate(
             ['key' => $key],
             ['key' => $key, 'value' => $value]
         );
-        Cache::set($cacheKey, $value, $cacheTTL);
+        Cache::set(self::cacheKey($key), $value, $cacheTTL);
     }
 
     public static function forget(string $key)
     {
-        $cacheKey = self::getCacheKey($key);
-        AppSettingModel::where('uuid', $key)->delete();
+        $cacheKey = self::cacheKey($key);
+        AppSettingModel::where('key', $key)->delete();
         Cache::forget($cacheKey);
     }
 
@@ -49,7 +50,7 @@ class AppSetting
      * @param string $key
      * @return string
      */
-    public static function getCacheKey(string $key): string
+    public static function cacheKey(string $key): string
     {
         $cacheKey = implode('//', [__CLASS__, $key]);
         return $cacheKey;
