@@ -2,7 +2,7 @@
 
 namespace FNP\ElStart\Console;
 
-use FNP\ElStart\Helpers\AppSetting;
+use FNP\ElStart\Helpers\AppSettings;
 use Illuminate\Console\Command;
 
 class AppSettingCommand extends Command
@@ -16,10 +16,10 @@ class AppSettingCommand extends Command
         $value = $this->argument('value');
 
         if ($value) {
-            AppSetting::set($key, $value);
+            AppSettings::set($key, $value);
             $this->info('Setting saved');
         } else {
-            echo AppSetting::get($key). PHP_EOL;
+            echo AppSettings::get($key). PHP_EOL;
         }
     }
 }

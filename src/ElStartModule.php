@@ -8,7 +8,7 @@ use Fnp\ElModule\Features\ModuleConsoleCommands;
 use Fnp\ElModule\Features\ModuleMigrations;
 use Fnp\ElModule\Features\ModuleRoutesWeb;
 use FNP\ElStart\Console\AppSettingCommand;
-use FNP\ElStart\Models\AppUser;
+use FNP\ElStart\Models\AppUserModel;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Foundation\Auth\EmailVerificationRequest;
 use Illuminate\Http\Request;
@@ -40,7 +40,7 @@ class ElStartModule extends ElModule
             'cache.stores.database.table'      => 'app_cache',
             'cache.stores.database.lock_table' => 'app_cache_locks',
             'database.migrations.table'        => 'app_migrations',
-            'auth.providers.users.model'       => AppUser::class,
+            'auth.providers.users.model'       => AppUserModel::class,
             'session.table'                    => 'app_sessions',
         ];
     }

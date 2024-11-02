@@ -5,7 +5,7 @@ namespace FNP\ElStart\Helpers;
 use FNP\ElStart\Models\AppSettingModel;
 use Illuminate\Support\Facades\Cache;
 
-class AppSetting
+class AppSettings
 {
     protected const CACHE_TTL = 60 * 60 * 24; // A DAY
 
