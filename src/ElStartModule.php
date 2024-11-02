@@ -9,6 +9,7 @@ use Fnp\ElModule\Features\ModuleMigrations;
 use Fnp\ElModule\Features\ModuleRoutesWeb;
 use FNP\ElStart\Console\AppSettingCommand;
 use FNP\ElStart\Models\AppUser;
+use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Foundation\Auth\EmailVerificationRequest;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Router;
@@ -19,6 +20,14 @@ class ElStartModule extends ElModule
     use ModuleMigrations;
     use ModuleRoutesWeb;
     use ModuleConsoleCommands;
+
+    public function boot()
+    {
+        Factory::guessFactoryNamesUsing(function ($name) {
+            return (string) '\\FNP\\ElStart\\Models\\'.
+                (class_basename($name)).'Factory';
+        });
+    }
 
     public function defineConfigOverride(): array
     {
