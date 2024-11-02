@@ -21,6 +21,16 @@ return new class extends Migration {
             $table->text('value');
             $table->timestamps();
         });
+
+        // Application Objects
+        Schema::create('app_objects', function (Blueprint $table) {
+            $table->char('uuid', 16)
+                ->charset('binary')
+                ->default(DB::raw('(UUID_TO_BIN(UUID()))'))
+                ->primary();
+            $table->text('class');
+            $table->timestamps();
+        });
     }
 
     /**
