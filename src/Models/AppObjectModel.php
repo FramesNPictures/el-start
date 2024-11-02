@@ -13,6 +13,11 @@ class AppObjectModel extends Model
     protected $keyType = 'string';
     public $incrementing = false;
 
+    protected $fillable = [
+        'uuid',
+        'class',
+    ];
+
     public function casts(): array
     {
         return [
