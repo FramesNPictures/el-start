@@ -12,6 +12,7 @@ class AppSettingModel extends Model
     protected $fillable = ['uuid', 'key', 'value'];
     public $incrementing = false;
     protected $keyType = 'string';
+    protected $primaryKey = 'uuid';
 
     public function casts()
     {
