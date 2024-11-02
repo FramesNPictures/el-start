@@ -7,6 +7,7 @@ use Fnp\ElModule\Features\ModuleConfigOverride;
 use Fnp\ElModule\Features\ModuleConsoleCommands;
 use Fnp\ElModule\Features\ModuleMigrations;
 use Fnp\ElModule\Features\ModuleRoutesWeb;
+use FNP\ElStart\Console\AppRegisterCommand;
 use FNP\ElStart\Console\AppSettingCommand;
 use FNP\ElStart\Models\AppUserModel;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -24,8 +25,8 @@ class ElStartModule extends ElModule
     public function boot()
     {
         Factory::guessFactoryNamesUsing(function ($name) {
-            return (string) '\\FNP\\ElStart\\Models\\'.
-                (class_basename($name)).'Factory';
+            return (string)'\\FNP\\ElStart\\Models\\' .
+                (class_basename($name)) . 'Factory';
         });
 
         parent::boot();
@@ -35,13 +36,13 @@ class ElStartModule extends ElModule
     {
         return [
             'queue.connections.database.table' => 'app_jobs',
-            'queue.failed.table'               => 'app_jobs_failed',
-            'queue.batching.table'             => 'app_jobs_batches',
-            'cache.stores.database.table'      => 'app_cache',
+            'queue.failed.table' => 'app_jobs_failed',
+            'queue.batching.table' => 'app_jobs_batches',
+            'cache.stores.database.table' => 'app_cache',
             'cache.stores.database.lock_table' => 'app_cache_locks',
-            'database.migrations.table'        => 'app_migrations',
-            'auth.providers.users.model'       => AppUserModel::class,
-            'session.table'                    => 'app_sessions',
+            'database.migrations.table' => 'app_migrations',
+            'auth.providers.users.model' => AppUserModel::class,
+            'session.table' => 'app_sessions',
         ];
     }
 
@@ -72,7 +73,8 @@ class ElStartModule extends ElModule
     public function defineConsoleCommands(): array
     {
         return [
-            AppSettingCommand::class
+            AppSettingCommand::class,
+            AppRegisterCommand::class,
         ];
     }
 }

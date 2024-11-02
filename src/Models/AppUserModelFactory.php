@@ -3,7 +3,7 @@
 namespace FNP\ElStart\Models;
 
 use FNP\ElStart\Enums\UserDetailType;
-use FNP\ElStart\Helpers\AppDetails;
+use FNP\ElStart\Helpers\UserDetails;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
@@ -42,10 +42,10 @@ class AppUserModelFactory extends Factory
         return $this->afterMaking(function (AppUserModel $user) {
             // ...
         })->afterCreating(function (AppUserModel $user) {
-            AppDetails::set($user, UserDetailType::FIRST_NAME, fake()->name());
-            AppDetails::set($user, UserDetailType::LAST_NAME, fake()->lastName());
-            AppDetails::set($user, UserDetailType::PHONE_MOBILE, fake()->phoneNumber());
-            AppDetails::set($user, UserDetailType::ADDRESS, fake()->address());
+            UserDetails::set($user, UserDetailType::FIRST_NAME, fake()->name());
+            UserDetails::set($user, UserDetailType::LAST_NAME, fake()->lastName());
+            UserDetails::set($user, UserDetailType::PHONE_MOBILE, fake()->phoneNumber());
+            UserDetails::set($user, UserDetailType::ADDRESS, fake()->address());
         });
     }
 }

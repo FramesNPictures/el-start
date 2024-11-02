@@ -24,4 +24,9 @@ class AppObjectModel extends Model
             'uuid' => BinToUuid::class,
         ];
     }
+
+    public function theInstance()
+    {
+        return app($this->class);
+    }
 }

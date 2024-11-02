@@ -31,6 +31,22 @@ return new class extends Migration {
             $table->text('class');
             $table->timestamps();
         });
+
+        // Logs
+        Schema::create('app_logs', function(Blueprint $table) {
+            $table->char('uuid', 16)
+                ->charset('binary')
+                ->default(DB::raw('(UUID_TO_BIN(UUID()))'))
+                ->primary();
+            $table->unsignedBigInteger('user_id')->nullable()->index();
+            $table->char('object_id', 16)
+                ->charset('binary')
+                ->index();
+            $table->integer('number');
+            $table->text('data');
+            $table->timestamps();
+            $table->index('created_at');
+        });
     }
 
     /**
