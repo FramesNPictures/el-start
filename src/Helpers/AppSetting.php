@@ -7,6 +7,8 @@ use Illuminate\Support\Facades\Cache;
 
 class AppSetting
 {
+    protected const CACHE_TTL = 60 * 60 * 24; // A DAY
+
     public static function getRaw(string $key, $default = null): mixed
     {
         $rec = AppSettingModel::where('key', $key)->first();
@@ -20,9 +22,8 @@ class AppSetting
 
     public static function get(string $key, $default = null): mixed
     {
-        $cacheTTL = 60 * 60 * 24; // An hour
         return Cache::remember(
-            self::cacheKey($key), $cacheTTL,
+            self::cacheKey($key), self::CACHE_TTL,
             function () use ($default, $key) {
                 return self::getRaw($key, $default);
             }
@@ -31,28 +32,21 @@ class AppSetting
 
     public static function set(string $key, $value)
     {
-        $cacheTTL = 60 * 60 * 24; // An hour
         $rec = AppSettingModel::updateOrCreate(
             ['key' => $key],
             ['key' => $key, 'value' => $value]
         );
-        Cache::set(self::cacheKey($key), $value, $cacheTTL);
+        Cache::set(self::cacheKey($key), $value, self::CACHE_TTL);
     }
 
     public static function forget(string $key)
     {
-        $cacheKey = self::cacheKey($key);
         AppSettingModel::where('key', $key)->delete();
-        Cache::forget($cacheKey);
+        Cache::forget(self::cacheKey($key));
     }
 
-    /**
-     * @param string $key
-     * @return string
-     */
     public static function cacheKey(string $key): string
     {
-        $cacheKey = implode('//', [__CLASS__, $key]);
-        return $cacheKey;
+        return implode('//', [__CLASS__, $key]);
     }
 }
