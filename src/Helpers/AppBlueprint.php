@@ -5,6 +5,9 @@ namespace FNP\ElStart\Helpers;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
 
+/**
+ * @extends Blueprint
+ */
 class AppBlueprint
 {
     public function __construct(protected Blueprint $table)
