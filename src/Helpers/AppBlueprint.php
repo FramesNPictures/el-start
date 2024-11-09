@@ -5,15 +5,15 @@ namespace FNP\ElStart\Helpers;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
 
-class MySQLBlueprintHelper
+class AppBlueprint
 {
     public function __construct(protected Blueprint $table)
     {
     }
 
-    public static function make(Blueprint $table): MySQLBlueprintHelper
+    public static function make(Blueprint $table): AppBlueprint
     {
-        return new MySQLBlueprintHelper($table);
+        return new AppBlueprint($table);
     }
 
     public function __call($name, $arguments)
@@ -23,8 +23,12 @@ class MySQLBlueprintHelper
 
     public function timestamps($precision = 0): void
     {
-        $this->table->timestamp('created_at', $precision)->default(DB::raw('CURRENT_TIMESTAMP'));
-        $this->table->timestamp('updated_at', $precision)->default(DB::raw('CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP'));
+        $this->table->timestamp('created_at', $precision)
+            ->index()
+            ->default(DB::raw('CURRENT_TIMESTAMP'));
+        $this->table->timestamp('updated_at', $precision)
+            ->index()
+            ->default(DB::raw('CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP'));
     }
 
     public function binaryUniqueUuid($name)
