@@ -92,9 +92,9 @@ class AppBlueprint
             ->default(DB::raw('CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP'));
     }
 
-    public function binaryUniqueUuid($name = 'uuid')
+    public function binaryUniqueUuid($name = 'uuid'): Fluent
     {
-        $this->table->char($name, 16)
+        return $this->table->char($name, 16)
             ->charset('binary')
             ->default(
                 DB::raw("(UUID_TO_BIN(LOWER(CONCAT(" .
@@ -104,7 +104,6 @@ class AppBlueprint
                     "LPAD(HEX(ROUND(rand()*POW(2,16))), 4, '0'), '-'," .
                     "LPAD(HEX(ROUND(rand()*POW(2,48))), 12, '0')" .
                     "))))")
-            )
-            ->unique();
+            );
     }
 }
