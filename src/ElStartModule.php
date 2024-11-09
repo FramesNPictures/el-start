@@ -7,7 +7,7 @@ use Fnp\ElModule\Features\ModuleConfigOverride;
 use Fnp\ElModule\Features\ModuleConsoleCommands;
 use Fnp\ElModule\Features\ModuleMigrations;
 use Fnp\ElModule\Features\ModuleRoutesWeb;
-use FNP\ElStart\Console\AppRegisterCommand;
+use FNP\ElStart\Console\AppRegisterObjectsCommand;
 use FNP\ElStart\Console\AppSettingCommand;
 use FNP\ElStart\Models\AppUserModel;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -74,7 +74,7 @@ class ElStartModule extends ElModule
     {
         return [
             AppSettingCommand::class,
-            AppRegisterCommand::class,
+            AppRegisterObjectsCommand::class,
         ];
     }
 }
