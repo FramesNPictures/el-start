@@ -6,6 +6,7 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
 
 /**
+ * @method \Illuminate\Support\Fluent id($column = 'id')
  * @method \Illuminate\Support\Fluent bigIncrements(string $column)
  * @method \Illuminate\Support\Fluent bigInteger(string $column, bool $autoIncrement = false, bool $unsigned = false)
  * @method \Illuminate\Support\Fluent binary(string $column)
@@ -94,7 +95,15 @@ class AppBlueprint
     {
         $this->table->char($name, 16)
             ->charset('binary')
-            ->default(DB::raw('(UUID_TO_BIN(UUID()))'))
+            ->default(
+                DB::raw("(UUID_TO_BIN(LOWER(CONCAT(" .
+                    "LPAD(HEX(ROUND(rand()*POW(2,32))), 8, '0'), '-'," .
+                    "LPAD(HEX(ROUND(rand()*POW(2,16))), 4, '0'), '-'," .
+                    "LPAD(HEX(ROUND(rand()*POW(2,16))), 4, '0'), '-'," .
+                    "LPAD(HEX(ROUND(rand()*POW(2,16))), 4, '0'), '-'," .
+                    "LPAD(HEX(ROUND(rand()*POW(2,48))), 12, '0')" .
+                    "))))")
+            )
             ->unique();
     }
 }
