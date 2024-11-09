@@ -4,6 +4,7 @@ namespace FNP\ElStart\Helpers;
 
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Fluent;
 
 /**
  * @method \Illuminate\Support\Fluent id($column = 'id')
@@ -76,9 +77,9 @@ class AppBlueprint
         return new AppBlueprint($table);
     }
 
-    public function __call($name, $arguments)
+    public function __call($name, $arguments): Fluent
     {
-        call_user_func_array([$this->table, $name], $arguments);
+        return call_user_func_array([$this->table, $name], $arguments);
     }
 
     public function timestamps($precision = 0): void
