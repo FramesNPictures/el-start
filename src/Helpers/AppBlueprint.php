@@ -91,7 +91,7 @@ class AppBlueprint
             ->default(DB::raw('CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP'));
     }
 
-    public function binaryUniqueUuid($name)
+    public function binaryUniqueUuid($name = 'uuid')
     {
         $this->table->char($name, 16)
             ->charset('binary')

@@ -41,8 +41,8 @@ class ElStartModule extends ElModule
             'cache.stores.database.table' => 'app_cache',
             'cache.stores.database.lock_table' => 'app_cache_locks',
             'database.migrations.table' => 'app_migrations',
-            'auth.providers.users.model' => AppUserModel::class,
             'session.table' => 'app_sessions',
+            'auth.passwords.users.table' => 'app_passwords_resets',
         ];
     }
 
