@@ -22,16 +22,6 @@ class ElStartModule extends ElModule
     use ModuleRoutesWeb;
     use ModuleConsoleCommands;
 
-    public function boot()
-    {
-        Factory::guessFactoryNamesUsing(function ($name) {
-            return (string)'\\FNP\\ElStart\\Models\\' .
-                (class_basename($name)) . 'Factory';
-        });
-
-        parent::boot();
-    }
-
     public function defineConfigOverride(): array
     {
         return [
