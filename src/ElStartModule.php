@@ -32,7 +32,7 @@ class ElStartModule extends ElModule
             'cache.stores.database.lock_table' => 'app_cache_locks',
             'database.migrations.table' => 'app_migrations',
             'session.table' => 'app_sessions',
-            'auth.passwords.users.table' => 'app_passwords_resets',
+            'auth.passwords.users.table' => 'app_auth_resets',
         ];
     }
 
