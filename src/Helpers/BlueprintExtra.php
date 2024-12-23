@@ -54,6 +54,7 @@ class BlueprintExtra
                     "LPAD(HEX(ROUND(rand()*POW(2,16))), 4, '0'), '-'," .
                     "LPAD(HEX(ROUND(rand()*POW(2,48))), 12, '0')" .
                     "))))")
-            );
+            )
+            ->unique();
     }
 }
