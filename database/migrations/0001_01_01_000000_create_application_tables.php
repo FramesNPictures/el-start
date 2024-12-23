@@ -1,6 +1,6 @@
 <?php
 
-use FNP\ElStart\Helpers\AppBlueprint;
+use FNP\ElStart\Helpers\BlueprintExtra;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;

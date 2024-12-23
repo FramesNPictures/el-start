@@ -41,7 +41,6 @@ class BlueprintExtra
             ->default(DB::raw('CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP'));
     }
 
-
     public function binaryUniqueUuid(string $name = 'uuid'): Fluent
     {
         return $this->table->char($name, 16)
