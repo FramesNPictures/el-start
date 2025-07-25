@@ -1,0 +1,24 @@
+#!/bin/zsh
+
+if [[ $1 != '' ]]
+then
+    if [[ -f $1 && $1 == *.php ]]
+    then
+        vendor/bin/rector process $1
+        vendor/bin/pint $1
+    else
+        echo "Error: File '$1' does not exist or is not a PHP file."
+    fi
+else
+    for f in `git status -s | cut -c4-`; do
+        echo "Processing $f ...";
+        if [[ -f $f && $f == *.php ]]
+        then
+            vendor/bin/rector process $f
+        else
+            echo "Skipping $f: File does not exist or is not a PHP file."
+        fi
+    done
+
+    vendor/bin/pint --dirty
+fi

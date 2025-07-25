@@ -9,18 +9,13 @@ use Fnp\ElModule\Features\ModuleMigrations;
 use Fnp\ElModule\Features\ModuleRoutesWeb;
 use FNP\ElStart\Console\AppRegisterObjectsCommand;
 use FNP\ElStart\Console\AppSettingCommand;
-use FNP\ElStart\Models\AppUserModel;
-use Illuminate\Database\Eloquent\Factories\Factory;
-use Illuminate\Foundation\Auth\EmailVerificationRequest;
-use Illuminate\Http\Request;
-use Illuminate\Routing\Router;
 
 class ElStartModule extends ElModule
 {
     use ModuleConfigOverride;
+    use ModuleConsoleCommands;
     use ModuleMigrations;
     use ModuleRoutesWeb;
-    use ModuleConsoleCommands;
 
     public function defineConfigOverride(): array
     {
@@ -39,25 +34,8 @@ class ElStartModule extends ElModule
     public function defineMigrationFolders(): array
     {
         return [
-            __DIR__ . '/../database/migrations',
+            __DIR__.'/../database/migrations',
         ];
-    }
-
-    public function defineWebRoutes(Router $router): void
-    {
-        // Resend email verification
-        $router->post('/app/email/verify', function (Request $request) {
-            $request->user()->sendEmailVerificationNotification();
-
-            return back()->with('message', 'Verification link sent!');
-        })->middleware(['auth', 'throttle:6,1'])->name('verification.send');
-
-        // Verify Email
-        $router->get('/app/email/verify/{id}/{hash}', function (EmailVerificationRequest $request) {
-            $request->fulfill();
-
-            return redirect('/app');
-        })->middleware(['auth', 'signed'])->name('verification.verify');
     }
 
     public function defineConsoleCommands(): array

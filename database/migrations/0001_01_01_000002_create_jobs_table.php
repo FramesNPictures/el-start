@@ -6,9 +6,6 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('app_jobs', function (Blueprint $table) {
@@ -17,8 +14,11 @@ return new class extends Migration
             $table->longText('payload');
             $table->unsignedTinyInteger('attempts');
             $table->unsignedInteger('reserved_at')->nullable();
-            $table->unsignedInteger('available_at');
-            $table->unsignedInteger('created_at');
+            $table->unsignedInteger('available_at')->index();
+            $table->unsignedInteger('created_at')->index();
+            // --
+            $table->index(['queue', 'reserved_at'], 'idx_app_jobs_queue_reserved');
+            $table->index(['queue', 'reserved_at', 'available_at'], 'idx_app_jobs_queue_reserved_available');
         });
 
         Schema::create('app_jobs_batches', function (Blueprint $table) {
@@ -32,6 +32,7 @@ return new class extends Migration
             $table->integer('cancelled_at')->nullable();
             $table->integer('created_at');
             $table->integer('finished_at')->nullable();
+            // --
         });
 
         Schema::create('app_jobs_failed', function (Blueprint $table) {
@@ -42,12 +43,10 @@ return new class extends Migration
             $table->longText('payload');
             $table->longText('exception');
             $table->timestamp('failed_at')->useCurrent();
+            // --
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('jobs');
