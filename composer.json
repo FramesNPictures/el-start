@@ -6,6 +6,10 @@
     "php": ">=8.2",
     "framesnpictures/el-module": "^0.13.0"
   },
+  "require-dev": {
+    "laravel/pint": "^1.24",
+    "rector/rector": "^2.1"
+  },
   "authors": [
     {
       "name": "Chris Cynarski",
@@ -23,9 +27,5 @@
         "FNP\\ElStart\\ElStartModule"
       ]
     }
-  },
-  "require-dev": {
-    "laravel/pint": "^1.24",
-    "rector/rector": "^2.1"
   }
 }
