@@ -4,18 +4,12 @@ namespace FNP\ElStart;
 
 use Fnp\ElModule\ElModule;
 use Fnp\ElModule\Features\ModuleConfigOverride;
-use Fnp\ElModule\Features\ModuleConsoleCommands;
 use Fnp\ElModule\Features\ModuleMigrations;
-use Fnp\ElModule\Features\ModuleRoutesWeb;
-use FNP\ElStart\Console\AppRegisterObjectsCommand;
-use FNP\ElStart\Console\AppSettingCommand;
 
 class ElStartModule extends ElModule
 {
     use ModuleConfigOverride;
-    use ModuleConsoleCommands;
     use ModuleMigrations;
-    use ModuleRoutesWeb;
 
     public function defineConfigOverride(): array
     {
@@ -35,14 +29,6 @@ class ElStartModule extends ElModule
     {
         return [
             __DIR__.'/../database/migrations',
-        ];
-    }
-
-    public function defineConsoleCommands(): array
-    {
-        return [
-            AppSettingCommand::class,
-            AppRegisterObjectsCommand::class,
         ];
     }
 }
