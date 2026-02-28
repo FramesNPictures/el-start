@@ -15,7 +15,6 @@ class ElStartModule extends ElModule
 {
     use ModuleConfigOverride;
     use ModuleMigrations;
-    use ModuleRoutesWeb;
 
     public function defineConfigOverride(): array
     {
@@ -36,22 +35,5 @@ class ElStartModule extends ElModule
         return [
             __DIR__ . '/../database/migrations',
         ];
-    }
-
-    public function defineWebRoutes(Router $router): void
-    {
-        // Resend email verification
-        $router->post('/app/email/verify', function (Request $request) {
-            $request->user()->sendEmailVerificationNotification();
-
-            return back()->with('message', 'Verification link sent!');
-        })->middleware(['auth', 'throttle:6,1'])->name('verification.send');
-
-        // Verify Email
-        $router->get('/app/email/verify/{id}/{hash}', function (EmailVerificationRequest $request) {
-            $request->fulfill();
-
-            return redirect('/app');
-        })->middleware(['auth', 'signed'])->name('verification.verify');
     }
 }
