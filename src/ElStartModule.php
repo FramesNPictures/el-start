@@ -6,7 +6,7 @@ use Fnp\ElModule\ElModule;
 use Fnp\ElModule\Features\ModuleConfigOverride;
 use Fnp\ElModule\Features\ModuleMigrations;
 use Fnp\ElModule\Features\ModuleRoutesWeb;
-use FNP\ElStart\Models\DB\AppUser;
+use Fnp\ElStart\Models\DAppUser;
 use Illuminate\Foundation\Auth\EmailVerificationRequest;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Router;
@@ -21,13 +21,13 @@ class ElStartModule extends ElModule
     {
         return [
             'queue.connections.database.table' => 'app_jobs',
-            'queue.failed.table'               => 'app_jobs_failed',
-            'queue.batching.table'             => 'app_jobs_batches',
-            'cache.stores.database.table'      => 'app_cache',
+            'queue.failed.table' => 'app_jobs_failed',
+            'queue.batching.table' => 'app_jobs_batches',
+            'cache.stores.database.table' => 'app_cache',
             'cache.stores.database.lock_table' => 'app_cache_locks',
-            'database.migrations.table'        => 'app_migrations',
-            'auth.providers.users.model'       => AppUser::class,
-            'session.table'                    => 'app_sessions',
+            'database.migrations.table' => 'app_migrations',
+            'auth.providers.users.model' => DAppUser::class,
+            'session.table' => 'app_sessions',
         ];
     }
 

@@ -1,12 +1,12 @@
 <?php
 
-namespace Fnp\ElStart\Models\DB;
+namespace Fnp\ElStart\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
-class AppUser extends Authenticatable
+class DAppUser extends Authenticatable
 {
     const TABLE = 'app_users';
 

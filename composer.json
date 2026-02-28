@@ -16,11 +16,20 @@
             "Fnp\\ElStart\\": "src/"
         }
     },
+    "autoload-dev": {
+        "psr-4": {
+            "Fnp\\ElStart\\Tests\\": "tests/"
+        }
+    },
     "extra": {
         "laravel": {
             "providers": [
                 "Fnp\\ElStart\\ElStartModule"
             ]
         }
+    },
+    "require-dev": {
+        "laravel/pint": "^1.27",
+        "orchestra/testbench": "^9.0"
     }
 }
