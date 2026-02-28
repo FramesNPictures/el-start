@@ -9,7 +9,7 @@
         }
     ],
     "require": {
-        "framesnpictures/el-module": "dev-develop|^v0.13"
+        "framesnpictures/el-module": "dev-develop|^v0.15"
     },
     "autoload": {
         "psr-4": {
