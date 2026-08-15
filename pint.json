@@ -15,30 +15,40 @@
     "declare_strict_types": false,
     "explicit_string_variable": true,
     "final_class": false,
-    "fully_qualified_strict_types": true,
+    "fully_qualified_strict_types": {
+      "import_symbols": true
+    },
     "global_namespace_import": {
       "import_classes": true,
       "import_constants": true,
       "import_functions": true
     },
-    "is_null": true,
+    "is_null": false,
     "lambda_not_used_import": true,
     "logical_operators": true,
-    "mb_str_functions": true,
+    "mb_str_functions": false,
     "method_chaining_indentation": true,
     "modernize_strpos": true,
     "new_with_braces": true,
     "no_empty_comment": true,
-    "not_operator_with_space": true,
+    "not_operator_with_successor_space": true,
     "ordered_traits": true,
     "protected_to_private": true,
     "simplified_if_return": true,
-    "strict_comparison": true,
+    "strict_comparison": false,
     "ternary_to_null_coalescing": true,
     "trim_array_spaces": true,
     "use_arrow_functions": true,
     "void_return": true,
-    "yoda_style": true,
+    "yoda_style": false,
+    "class_attributes_separation": {
+      "elements": {
+        "const": "none"
+      }
+    },
+    "no_extra_blank_lines": {
+      "tokens": ["extra"]
+    },
     "array_push": true,
     "assign_null_coalescing_to_coalesce_equal": true,
     "explicit_indirect_variable": true,
@@ -75,7 +85,7 @@
         "method_private_static",
         "method_private"
       ],
-      "sort_algorithm": "none"
+      "sort_algorithm": "alpha"
     }
   }
 }

@@ -4,17 +4,23 @@ namespace Fnp\ElStart;
 
 use Fnp\ElModule\ElModule;
 use Fnp\ElModule\Features\ModuleConfigOverride;
+use Fnp\ElModule\Features\ModuleEventListeners;
 use Fnp\ElModule\Features\ModuleMigrations;
-use Fnp\ElModule\Features\ModuleRoutesWeb;
-use Fnp\ElStart\Models\DAppUser;
-use Illuminate\Foundation\Auth\EmailVerificationRequest;
-use Illuminate\Http\Request;
-use Illuminate\Routing\Router;
+use Fnp\ElModule\Features\ModuleNamespacedViews;
+use Fnp\ElModule\Features\ModuleSingletons;
+use Fnp\ElStart\Data\PageModel;
+use Fnp\ElStart\Data\SiteModel;
+use Fnp\ElStart\Listeners\AuditEventListener;
 
 class ElStartModule extends ElModule
 {
     use ModuleConfigOverride;
+    use ModuleEventListeners;
     use ModuleMigrations;
+    use ModuleNamespacedViews;
+    use ModuleSingletons;
+
+    public const VIEW_NAMESPACE = 'el-start';
 
     public function defineConfigOverride(): array
     {
@@ -25,8 +31,14 @@ class ElStartModule extends ElModule
             'cache.stores.database.table' => 'app_cache',
             'cache.stores.database.lock_table' => 'app_cache_locks',
             'database.migrations.table' => 'app_migrations',
-            'auth.providers.users.model' => DAppUser::class,
             'session.table' => 'app_sessions',
+        ];
+    }
+
+    public function defineEventListeners(): array
+    {
+        return [
+            '*' => AuditEventListener::class,
         ];
     }
 
@@ -34,6 +46,21 @@ class ElStartModule extends ElModule
     {
         return [
             __DIR__ . '/../database/migrations',
+        ];
+    }
+
+    public function defineNamespacedViewFolders(): array
+    {
+        return [
+            self::VIEW_NAMESPACE => __DIR__ . '/../resources/views',
+        ];
+    }
+
+    public function defineSingletons(): array
+    {
+        return [
+            PageModel::class => PageModel::class,
+            SiteModel::class => SiteModel::class,
         ];
     }
 }
