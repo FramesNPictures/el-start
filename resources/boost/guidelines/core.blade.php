@@ -59,3 +59,18 @@
 ## Views
 - Names of the blade files should be in kebab-case.
 - Names of the blade components should be in kebab-case.
+
+## Data Models
+- Data models should be placed in the `app/Models` directory.
+- It's reasonable to add a subdirectory to the `app/Models` directory to organize related models together.
+- Data models should be suffixed with "Model".
+
+## Tokens
+- `app_tokens` holds tokens attached to any model through a polymorphic `tokenable` relation. The table and the `Fnp\ElStart\Models\AppToken` model ship with this module — do not create an application migration for them.
+- A token carries a type (`type_eid`), a `value`, and an optional `expires_at`. A token without an expiry date never expires.
+- The token type enum belongs to the application. Create an integer backed enum in `app/Enums` (e.g. `ETokenType`) that implements `Fnp\ElStart\Contracts\TokenType`.
+- Register the enum once, in a service provider or module boot, with `AppToken::useTokenTypes(ETokenType::class)` so `type_eid` casts back to it. Without it the column stays a plain integer.
+- Add the `Fnp\ElStart\Traits\HasTokens` trait to any model that should own tokens.
+- Write with `addToken($type, $value = null, $expiresAt = null)` (a random 64 character value is generated when none is given), `removeToken($tokenOrValue, $type = null)`, `removeTokens($type = null)`, and `removeExpiredTokens()`.
+- Read with `tokens()`, `token($type)` (newest valid one), `tokenValue($type)`, `findToken($value, $type = null, $validOnly = true)`, `hasToken($type, $value = null)`, `validTokens($type = null)`, and `expiredTokens($type = null)`.
+- Expired tokens are skipped by every read helper. Query them explicitly with the `valid()`, `expired()`, `ofType()`, and `withValue()` scopes on `AppToken`.
