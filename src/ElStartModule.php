@@ -11,6 +11,7 @@ use Fnp\ElModule\Features\ModuleSingletons;
 use Fnp\ElStart\Data\PageModel;
 use Fnp\ElStart\Data\SiteModel;
 use Fnp\ElStart\Listeners\AuditEventListener;
+use Fnp\ElStart\Services\TokenService;
 
 class ElStartModule extends ElModule
 {
@@ -61,6 +62,7 @@ class ElStartModule extends ElModule
         return [
             PageModel::class => PageModel::class,
             SiteModel::class => SiteModel::class,
+            TokenService::class => TokenService::class,
         ];
     }
 }

@@ -2,6 +2,7 @@
 
 use Fnp\ElStart\Data\PageModel;
 use Fnp\ElStart\Data\SiteModel;
+use Fnp\ElStart\Services\TokenService;
 
 if (! function_exists('page')) {
     /**
@@ -20,5 +21,15 @@ if (! function_exists('site')) {
     function site(): SiteModel
     {
         return app(SiteModel::class);
+    }
+}
+
+if (! function_exists('token')) {
+    /**
+     * Resolve the token service.
+     */
+    function token(): TokenService
+    {
+        return app(TokenService::class);
     }
 }

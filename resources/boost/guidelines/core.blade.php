@@ -74,3 +74,5 @@
 - Write with `addToken($type, $value = null, $expiresAt = null)` (a random 64 character value is generated when none is given), `removeToken($tokenOrValue, $type = null)`, `removeTokens($type = null)`, and `removeExpiredTokens()`.
 - Read with `tokens()`, `token($type)` (newest valid one), `tokenValue($type)`, `findToken($value, $type = null, $validOnly = true)`, `hasToken($type, $value = null)`, `validTokens($type = null)`, and `expiredTokens($type = null)`.
 - Expired tokens are skipped by every read helper. Query them explicitly with the `valid()`, `expired()`, `ofType()`, and `withValue()` scopes on `AppToken`.
+- When only the token value is known (an incoming link, a request header), resolve it with the `token()` helper, which returns the shared `Fnp\ElStart\Services\TokenService`.
+- `token()->find($value, $type = null, $validOnly = true)` returns the `AppToken` record, `token()->findTarget(...)` returns the model it is attached to. Both look across every model and return null when nothing matches.
