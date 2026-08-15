@@ -352,7 +352,7 @@ are left untouched; compare the result with `$user->vaultGrants()->count()` to s
 
 ## Events
 
-Five events in `Fnp\ElStart\Events` follow the vault, and all of them implement `Auditable`, so the audit listener of
+Seven events in `Fnp\ElStart\Events` follow the vault, and all of them implement `Auditable`, so the audit listener of
 this module writes them to `app_audit` with no wiring of your own:
 
 | Event | Dispatched by | Carries |
@@ -362,6 +362,8 @@ this module writes them to `app_audit` with no wiring of your own:
 | `VaultRekeyed` | `rekey()`, `recover()` | the user, `recovered`, number of re-sealed entries |
 | `VaultUpdated` | `put()` | the entry, `created` when it was the first write |
 | `VaultRemoved` | `remove()` | the model, the detail (null for all), number of entries |
+| `VaultShared` | `share()` | the entry and the reader let in |
+| `VaultRevoked` | `revoke()` | the entry and the reader shut out |
 
 **No event carries a value, a key or a password**, and neither does the audit payload — an audit trail of the vault says
 that a detail changed and who was there, never what it changed to. There is a test holding that line; keep it if you add
@@ -372,7 +374,8 @@ command, a queued job, a schedule. That is independent of which key pair did the
 the system user is filed under their own id with `identity: system` in the payload, while the same command run from cron
 is filed with no user at all.
 
-Locking a vault that was never open announces nothing, and neither does a removal that removed nothing.
+Only real changes are announced: locking a vault that was never open, removing nothing, sharing with a reader that
+already holds a grant, and revoking one that holds none all stay quiet.
 
 Listen to them like any other event:
 
@@ -383,9 +386,6 @@ Event::listen(function (VaultOpened $event): void {
     }
 });
 ```
-
-Sharing and revoking are not covered by these five. Add events of your own around `share()` / `revoke()` if the audit
-trail needs to record who was let in.
 
 ## Errors
 

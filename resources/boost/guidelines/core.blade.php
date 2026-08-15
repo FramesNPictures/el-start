@@ -104,6 +104,6 @@
 - `VaultService::usePepper($secret)` swaps the application key for a secret of your own, and `VaultService::useDerivationCost($operations, $memory)` sets the Argon2id limits. Both change the derived key, so set them once at boot and keep them stable.
 - Anything the current key pair cannot open throws `Fnp\ElStart\Exceptions\VaultException`. Guard the call, or check `vault()->isUnlocked()` first.
 - Values go through `json_encode`, so store data that survives a JSON round trip.
-- The vault announces itself with five `Auditable` events in `Fnp\ElStart\Events`: `VaultOpened`, `VaultClosed`, `VaultRekeyed`, `VaultUpdated` and `VaultRemoved`. The audit listener of this module records them in `app_audit` without any wiring.
-- No vault event and no audit payload ever carries a value, a key or a password — only who was there and which detail of which model changed. Keep it that way in any event you add on top.
-- A lock with nothing open and a removal that removed nothing announce nothing, so the audit trail stays free of noise.
+- The vault announces itself with seven `Auditable` events in `Fnp\ElStart\Events`: `VaultOpened`, `VaultClosed`, `VaultRekeyed`, `VaultUpdated`, `VaultRemoved`, `VaultShared` and `VaultRevoked`. The audit listener of this module records them in `app_audit` without any wiring.
+- No vault event and no audit payload ever carries a value, a key or a password — only who was there, which detail of which model changed, and who was let in or shut out. Keep it that way in any event you add on top.
+- Only real changes are announced: a lock with nothing open, a removal that removed nothing, a share to a reader that already holds a grant and a revoke of one that holds none all stay quiet, so the audit trail keeps free of noise.

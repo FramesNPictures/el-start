@@ -7,6 +7,8 @@ use Fnp\ElStart\Events\VaultClosed;
 use Fnp\ElStart\Events\VaultOpened;
 use Fnp\ElStart\Events\VaultRekeyed;
 use Fnp\ElStart\Events\VaultRemoved;
+use Fnp\ElStart\Events\VaultRevoked;
+use Fnp\ElStart\Events\VaultShared;
 use Fnp\ElStart\Events\VaultUpdated;
 use Fnp\ElStart\Exceptions\VaultException;
 use Fnp\ElStart\Models\AppVault;
@@ -437,7 +439,7 @@ class VaultService
             return false;
         }
 
-        return DB::transaction(function () use ($entry, $entryKey, $reader): bool {
+        DB::transaction(function () use ($entry, $entryKey, $reader): void {
             AppVaultGrant::query()->where('vault_id', $entry->id)->for($reader)->delete();
 
             $rotated = random_bytes(SODIUM_CRYPTO_AEAD_XCHACHA20POLY1305_IETF_KEYBYTES);
@@ -457,9 +459,11 @@ class VaultService
 
                 $grant->save();
             }
-
-            return true;
         });
+
+        Event::dispatch(new VaultRevoked($entry, $reader));
+
+        return true;
     }
 
     /**
@@ -482,13 +486,20 @@ class VaultService
             throw VaultException::noPublicKey($reader);
         }
 
-        return $this->grant(
+        $grant = $this->grant(
             $entry,
             $reader->getMorphClass(),
             $reader->getKey(),
             base64_decode($row->public_key, true),
             $this->entryKey($entry),
         );
+
+        // Sharing what the reader already holds changes nothing to announce.
+        if ($grant->wasRecentlyCreated) {
+            Event::dispatch(new VaultShared($entry, $reader));
+        }
+
+        return $grant;
     }
 
     /**

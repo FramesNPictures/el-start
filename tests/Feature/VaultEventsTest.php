@@ -4,6 +4,8 @@ use Fnp\ElStart\Events\VaultClosed;
 use Fnp\ElStart\Events\VaultOpened;
 use Fnp\ElStart\Events\VaultRekeyed;
 use Fnp\ElStart\Events\VaultRemoved;
+use Fnp\ElStart\Events\VaultRevoked;
+use Fnp\ElStart\Events\VaultShared;
 use Fnp\ElStart\Events\VaultUpdated;
 use Fnp\ElStart\Models\AppAudit;
 use Fnp\ElStart\Models\AppVault;
@@ -152,6 +154,68 @@ it('stays quiet when there was nothing to remove', function (): void {
     expect(vault()->remove($this->user))->toBe(0);
 
     Event::assertNotDispatched(VaultRemoved::class);
+});
+
+it('announces a share and a revoke', function (): void {
+    $reader = UserStub::create(['email' => 'reader@example.test']);
+    vault()->unlock($reader, 'their password');
+    vault()->lock();
+
+    vault()->unlock($this->user, 'correct horse');
+    $entry = vault()->put($this->user, EVaultDetailStub::Pin, '1234');
+
+    Event::fake([VaultShared::class, VaultRevoked::class]);
+
+    vault()->share($this->user, EVaultDetailStub::Pin, $reader);
+    vault()->revoke($this->user, EVaultDetailStub::Pin, $reader);
+
+    Event::assertDispatched(VaultShared::class, fn (VaultShared $event): bool => $event->reader->is($reader)
+            && $event->entry->is($entry)
+            && $event->entry->detailValue() === EVaultDetailStub::Pin->value);
+
+    Event::assertDispatched(VaultRevoked::class, fn (VaultRevoked $event): bool => $event->reader->is($reader)
+            && $event->entry->is($entry));
+});
+
+it('stays quiet when the share or the revoke changed nothing', function (): void {
+    $reader = UserStub::create(['email' => 'reader@example.test']);
+    vault()->unlock($reader, 'their password');
+    vault()->lock();
+
+    vault()->unlock($this->user, 'correct horse');
+    vault()->put($this->user, EVaultDetailStub::Pin, '1234');
+    vault()->share($this->user, EVaultDetailStub::Pin, $reader);
+
+    Event::fake([VaultShared::class, VaultRevoked::class]);
+
+    // Already shared, and already gone.
+    vault()->share($this->user, EVaultDetailStub::Pin, $reader);
+    vault()->revoke($this->user, EVaultDetailStub::Pin, $reader);
+    vault()->revoke($this->user, EVaultDetailStub::Pin, $reader);
+
+    Event::assertNotDispatched(VaultShared::class);
+    Event::assertDispatchedTimes(VaultRevoked::class, 1);
+});
+
+it('audits a share with who was let in but not what they may read', function (): void {
+    $reader = UserStub::create(['email' => 'reader@example.test']);
+    vault()->unlock($reader, 'their password');
+    vault()->lock();
+
+    vault()->unlock($this->user, 'correct horse');
+    $entry = vault()->put($this->user, EVaultDetailStub::Pin, 'the value itself');
+    vault()->share($this->user, EVaultDetailStub::Pin, $reader);
+
+    $audit = AppAudit::query()->where('event', VaultShared::class)->first();
+
+    expect($audit->payload)->toBe([
+        'vaultable' => UserStub::class,
+        'vaultable_id' => $this->user->id,
+        'detail' => EVaultDetailStub::Pin->value,
+        'entry_id' => $entry->id,
+        'reader' => UserStub::class,
+        'reader_id' => $reader->id,
+    ])->and(json_encode($audit->payload))->not->toContain('the value itself');
 });
 
 it('announces a rekey', function (): void {
