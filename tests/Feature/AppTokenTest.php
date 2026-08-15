@@ -16,9 +16,6 @@ beforeEach(function (): void {
 });
 
 afterEach(function (): void {
-    // The registered enum is static and would otherwise leak between tests.
-    AppToken::useTokenTypes(null);
-
     Schema::dropIfExists(TokenableStub::TABLE);
 });
 
@@ -56,15 +53,6 @@ it('stores the token type as an integer', function (): void {
 
     expect(DB::table(AppToken::TABLE)->value('type_eid'))->toBe(ETokenTypeStub::Reset->value)
         ->and(AppToken::first()->type_eid)->toBe(ETokenTypeStub::Reset->value);
-});
-
-it('casts the token type back to the registered enum', function (): void {
-    AppToken::useTokenTypes(ETokenTypeStub::class);
-
-    $stub = TokenableStub::create(['name' => 'Example']);
-    $stub->addToken(ETokenTypeStub::Invitation, 'secret');
-
-    expect(AppToken::first()->type_eid)->toBe(ETokenTypeStub::Invitation);
 });
 
 it('generates a random value when none is given', function (): void {

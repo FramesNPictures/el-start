@@ -1,6 +1,5 @@
 <?php
 
-use Fnp\ElStart\Models\AppToken;
 use Fnp\ElStart\Services\TokenService;
 use Fnp\ElStart\Tests\Stubs\ETokenTypeStub;
 use Fnp\ElStart\Tests\Stubs\TokenableStub;
@@ -16,9 +15,6 @@ beforeEach(function (): void {
 });
 
 afterEach(function (): void {
-    // The registered enum is static and would otherwise leak between tests.
-    AppToken::useTokenTypes(null);
-
     Schema::dropIfExists(TokenableStub::TABLE);
 });
 

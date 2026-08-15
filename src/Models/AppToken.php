@@ -26,23 +26,6 @@ class AppToken extends Model
     protected $table = self::TABLE;
 
     /**
-     * Application enum the `type_eid` column is cast to.
-     *
-     * @var class-string<TokenType>|null
-     */
-    protected static ?string $tokenTypes = null;
-
-    /**
-     * Register the application enum describing the token types.
-     *
-     * @param  class-string<TokenType>|null  $enum  Integer backed enum, null to store raw integers
-     */
-    public static function useTokenTypes(?string $enum): void
-    {
-        static::$tokenTypes = $enum;
-    }
-
-    /**
      * Whether the token carries an expiry date that has already passed.
      */
     public function isExpired(): bool
@@ -111,12 +94,8 @@ class AppToken extends Model
      */
     protected function casts(): array
     {
-        $casts = ['expires_at' => 'datetime'];
-
-        if (static::$tokenTypes !== null) {
-            $casts['type_eid'] = static::$tokenTypes;
-        }
-
-        return $casts;
+        return [
+            'expires_at' => 'datetime',
+        ];
     }
 }
