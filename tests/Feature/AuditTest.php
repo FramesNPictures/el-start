@@ -27,8 +27,13 @@ it('records an auditable event', function (): void {
     expect($entry)->not->toBeNull()
         ->and($entry->event)->toBe(AuditableStubEvent::class)
         ->and($entry->payload)->toBe(['order' => 15])
-        ->and($entry->user_id)->toBeNull()
         ->and($entry->created_at)->not->toBeNull();
+});
+
+it('leaves the user empty when nobody is logged in', function (): void {
+    Event::dispatch(new AuditableStubEvent(['a' => 1]));
+
+    expect(AppAudit::first()->user_id)->toBeNull();
 });
 
 it('ignores events that are not auditable', function (): void {

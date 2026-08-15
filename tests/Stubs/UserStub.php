@@ -2,16 +2,14 @@
 
 namespace Fnp\ElStart\Tests\Stubs;
 
-use Fnp\ElStart\Traits\HasTokens;
 use Fnp\ElStart\Traits\HasVault;
 use Illuminate\Database\Eloquent\Model;
 
-class TokenableStub extends Model
+class UserStub extends Model
 {
-    use HasTokens;
     use HasVault;
 
-    const TABLE = 'stub_tokenables';
+    const TABLE = 'stub_users';
 
     public $timestamps = false;
 
@@ -21,7 +19,7 @@ class TokenableStub extends Model
      * @var array<int, string>
      */
     protected $fillable = [
-        'name',
+        'email',
     ];
 
     protected $table = self::TABLE;

@@ -14,6 +14,9 @@ abstract class TestCase extends Orchestra
 
     protected function defineEnvironment($app): void
     {
+        // The vault wraps its session key with the application key.
+        $app['config']->set('app.key', 'base64:' . base64_encode(str_repeat('el-start', 4)));
+
         // Setup default database to use sqlite :memory:
         $app['config']->set('database.default', 'testing');
         $app['config']->set('database.connections.testing', [

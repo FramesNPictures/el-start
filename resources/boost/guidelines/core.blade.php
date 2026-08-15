@@ -69,10 +69,41 @@
 - `app_tokens` holds tokens attached to any model through a polymorphic `tokenable` relation. The table and the `Fnp\ElStart\Models\AppToken` model ship with this module — do not create an application migration for them.
 - A token carries a type (`type_eid`), a `value`, and an optional `expires_at`. A token without an expiry date never expires.
 - The token type enum belongs to the application. Create an integer backed enum in `app/Enums` (e.g. `ETokenType`) that implements `Fnp\ElStart\Contracts\TokenType`.
-- Register the enum once, in a service provider or module boot, with `AppToken::useTokenTypes(ETokenType::class)` so `type_eid` casts back to it. Without it the column stays a plain integer.
+- Every token method takes the enum case, never the raw integer. Only the column is plain: `type_eid` is stored and read back as an integer and is not cast, so resolve it with `ETokenType::from($token->type_eid)` where the case itself is needed.
 - Add the `Fnp\ElStart\Traits\HasTokens` trait to any model that should own tokens.
 - Write with `addToken($type, $value = null, $expiresAt = null)` (a random 64 character value is generated when none is given), `removeToken($tokenOrValue, $type = null)`, `removeTokens($type = null)`, and `removeExpiredTokens()`.
 - Read with `tokens()`, `token($type)` (newest valid one), `tokenValue($type)`, `findToken($value, $type = null, $validOnly = true)`, `hasToken($type, $value = null)`, `validTokens($type = null)`, and `expiredTokens($type = null)`.
 - Expired tokens are skipped by every read helper. Query them explicitly with the `valid()`, `expired()`, `ofType()`, and `withValue()` scopes on `AppToken`.
 - When only the token value is known (an incoming link, a request header), resolve it with the `token()` helper, which returns the shared `Fnp\ElStart\Services\TokenService`.
 - `token()->find($value, $type = null, $validOnly = true)` returns the `AppToken` record, `token()->findTarget(...)` returns the model it is attached to. Both look across every model and return null when nothing matches.
+
+## Audit
+- Any event implementing `Fnp\ElStart\Contracts\Auditable` is recorded in `app_audit` by the listener this module registers on `*`. Nothing else needs wiring: dispatch the event and return the payload from `audit()`.
+- Every row records who was there in `user_id`: the id of the logged in user, or null when nobody was — a console command, a queued job, a schedule, anything running as the system.
+- Keep secrets out of `audit()`. The payload is stored unencrypted; record identifiers and what changed, never the value it changed to.
+
+## Vault
+- The vault encrypts data of any model for the key pairs that may read it. Three tables ship with this module: `app_vault` for the entries, `app_vault_keys` for the key pairs, `app_vault_grants` for who may open what.
+- An entry is a single detail of a model, attached through a polymorphic `vaultable` relation: the `detail_eid` column names it, the `value` column holds the ciphertext. One entry per model and detail, so writing the same detail twice replaces the value and keeps the grants.
+- The detail enum belongs to the application. Create an integer backed enum in `app/Enums` (e.g. `EVaultDetail`) that implements `Fnp\ElStart\Contracts\VaultDetail`.
+- Every vault method takes the enum case, never the raw integer. Only the column is plain: `detail_eid` is stored and read back as an integer and is not cast, so resolve it with `EVaultDetail::from($entry->detail_eid)` where the case itself is needed.
+- Case values take part in the key derivation. Renumbering a case makes every entry stored under it unreadable, so treat the numbers as permanent.
+- Every model that unlocks the vault owns an X25519 key pair, minted on its first unlock and stored in `app_vault_keys`. The public half is in the clear, the secret half encrypted with a key derived from the password with Argon2id, salted with `user.id` and `user.email` and peppered with the application key.
+- Each entry carries a random key of its own. The value is encrypted with it, and that key is sealed once per reader into `app_vault_grants` — to the writer, to the system user, and to anyone the entry is shared with. Any one grant opens it.
+- Unlock at login, where the plain password still exists: `vault()->unlock($user, $password)`. A wrong password is refused there, because it fails to open the stored key pair. `vault()->lock()` drops everything, and the module locks the vault on the `Logout` event.
+- Add the `Fnp\ElStart\Traits\HasVault` trait to any model that holds encrypted data. Write with `putVault($detail, $value)`, read with `vaultValue($detail, $default = null)`, drop with `removeVault($detail = null)`, and reach the rows with `vault()`, `vaultGrants()` and `vaultKey`.
+- The service takes the same operations for any model: `vault()->put($model, $detail, $value)`, `vault()->get($model, $detail, $default)`, `vault()->has()`, `vault()->remove()`, plus `vault()->encrypt()` / `vault()->decrypt()` for payloads that never reach the table — those are sealed to no key pair and do not survive a `rekey()`.
+- Share with `shareVault($detail, $reader)` and take it back with `revokeVault($detail, $reader)`. The reader needs a key pair, so it must have unlocked the vault once. Revoking rotates the entry key and re-seals it to everyone left.
+- `hasVault($detail)`, `vaultDetails()` and `removeVault()` work while the vault is locked — details and grants are stored in the clear, only the values need a key pair.
+- Changing a password or an email address needs `vault()->rekey($user, $newPassword)` while the vault is still unlocked with the old ones. It rewrites one row, the key pair of that user. No entry is touched and there is no list of models to keep.
+- The system user is a key pair, not a record. Register it with the `Fnp\ElStart\Features\ModuleVaultSystem` feature on a module — `defineVaultSystem()` returns `public`, `secret` and `unlock`. Give every process the public key and only the console the secret one. `VaultService::generateSystemKeys()` mints a pair.
+- `vault()->unlockAsSystem()` opens the vault as the system user, `vault()->isSystem()` reports it, and nothing is written to the session, so system access dies with the process.
+- Writes always run as a logged in user: `put()` and `rekey()` throw while unlocked as the system user, because the user could not open what they produced.
+- `vault()->recover($user, $newPassword)` is the password reset path and runs only as the system user. It mints a fresh key pair for the user and re-seals every entry the system can open, found through that user's grants. It returns the count; entries never sealed to the system user are left behind.
+- Entries written before a system public key was registered have no system grant. The next `put()` on them adds one.
+- `VaultService::usePepper($secret)` swaps the application key for a secret of your own, and `VaultService::useDerivationCost($operations, $memory)` sets the Argon2id limits. Both change the derived key, so set them once at boot and keep them stable.
+- Anything the current key pair cannot open throws `Fnp\ElStart\Exceptions\VaultException`. Guard the call, or check `vault()->isUnlocked()` first.
+- Values go through `json_encode`, so store data that survives a JSON round trip.
+- The vault announces itself with five `Auditable` events in `Fnp\ElStart\Events`: `VaultOpened`, `VaultClosed`, `VaultRekeyed`, `VaultUpdated` and `VaultRemoved`. The audit listener of this module records them in `app_audit` without any wiring.
+- No vault event and no audit payload ever carries a value, a key or a password — only who was there and which detail of which model changed. Keep it that way in any event you add on top.
+- A lock with nothing open and a removal that removed nothing announce nothing, so the audit trail stays free of noise.

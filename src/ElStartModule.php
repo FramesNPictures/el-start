@@ -11,7 +11,10 @@ use Fnp\ElModule\Features\ModuleSingletons;
 use Fnp\ElStart\Data\PageModel;
 use Fnp\ElStart\Data\SiteModel;
 use Fnp\ElStart\Listeners\AuditEventListener;
+use Fnp\ElStart\Listeners\VaultLogoutListener;
 use Fnp\ElStart\Services\TokenService;
+use Fnp\ElStart\Services\VaultService;
+use Illuminate\Auth\Events\Logout;
 
 class ElStartModule extends ElModule
 {
@@ -40,6 +43,7 @@ class ElStartModule extends ElModule
     {
         return [
             '*' => AuditEventListener::class,
+            Logout::class => VaultLogoutListener::class,
         ];
     }
 
@@ -63,6 +67,7 @@ class ElStartModule extends ElModule
             PageModel::class => PageModel::class,
             SiteModel::class => SiteModel::class,
             TokenService::class => TokenService::class,
+            VaultService::class => VaultService::class,
         ];
     }
 }
