@@ -6,6 +6,8 @@ use Fnp\ElModule\Helpers\HClassMap;
 use Fnp\ElStart\Contracts\Auditable;
 use Fnp\ElStart\Models\AppAudit;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
+use Throwable;
 
 class AuditEventListener
 {
@@ -24,11 +26,21 @@ class AuditEventListener
         }
 
         $class = $event::class;
+        $name = HClassMap::getAlias($class) ?? $class;
 
-        AppAudit::create([
-            'event' => HClassMap::getAlias($class) ?? $class,
-            'user_id' => Auth::check() ? Auth::id() : null,
-            'payload' => $event->audit(),
-        ]);
+        try {
+            AppAudit::create([
+                'event' => $name,
+                'user_id' => Auth::check() ? Auth::id() : null,
+                'payload' => $event->audit(),
+            ]);
+        } catch (Throwable $exception) {
+            // Silently fail to prevent audit failures from breaking the app,
+            // but leave a trace of it for whoever goes looking. The payload
+            // stays out of the log: it belongs in the audit table, not here.
+            Log::debug('[APP] Audit entry for ' . $name . ' could not be written.', [
+                'exception' => $exception,
+            ]);
+        }
     }
 }

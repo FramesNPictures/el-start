@@ -6,6 +6,7 @@ use Fnp\ElStart\Tests\Stubs\PlainStubEvent;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 
 afterEach(function (): void {
@@ -58,4 +59,28 @@ it('stores the id of the authenticated user', function (): void {
     Event::dispatch(new AuditableStubEvent(['a' => 1]));
 
     expect(AppAudit::first()->user_id)->toBe(42);
+});
+
+it('logs an entry it cannot write instead of breaking the dispatch', function (): void {
+    Log::spy();
+    Schema::drop(AppAudit::TABLE);
+
+    Event::dispatch(new AuditableStubEvent(['a' => 1]));
+
+    Log::shouldHaveReceived('debug')->withArgs(
+        fn (string $message, array $context): bool => str_starts_with($message, '[APP] ')
+            && str_contains($message, AuditableStubEvent::class)
+            && $context['exception'] instanceof Throwable,
+    );
+});
+
+it('keeps the payload out of the log', function (): void {
+    Log::spy();
+    Schema::drop(AppAudit::TABLE);
+
+    Event::dispatch(new AuditableStubEvent(['card' => 'the secret itself']));
+
+    Log::shouldHaveReceived('debug')->withArgs(
+        fn (string $message): bool => ! str_contains($message, 'the secret itself'),
+    );
 });

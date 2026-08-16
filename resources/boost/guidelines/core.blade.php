@@ -7,15 +7,15 @@
 
 ## Renamed Framework Tables
 - This module overrides config at boot so every framework-owned table carries an `app_` prefix. Never assume Laravel's default table names in this application.
-- `jobs` is `app_jobs`, `failed_jobs` is `app_jobs_failed`, `job_batches` is `app_jobs_batches`, `cache` is `app_cache`, `cache_locks` is `app_cache_locks`, `sessions` is `app_sessions`, `migrations` is `app_migrations`.
+- `jobs` is `app_jobs`, `failed_jobs` is `app_jobs_failed`, `job_batches` is `app_jobs_batches`, `cache` is `app_cache`, `cache_locks` is `app_cache_locks`, `sessions` is `app_sessions`, `migrations` is `app_migrations`, `users` is `app_users`. `password_reset_tokens` has no counterpart: those tokens live in `app_tokens`.
 - Prefer resolving the name from config over hardcoding it: `config('queue.connections.database.table')`, `config('queue.failed.table')`, `config('queue.batching.table')`, `config('cache.stores.database.table')`, `config('cache.stores.database.lock_table')`, `config('session.table')`, `config('database.migrations.table')`.
 - The renames live in `ElStartModule::defineConfigOverride()`. Keep every table rename there rather than editing the application's `config/*.php`, so one file stays the source of truth.
 - If there are migrations (usually boundled with Laravel scaffolding), they should be removed from the application code.
 
 ## Migrations
 - The migrations for these tables ship with this module and are auto-loaded through the `ModuleMigrations` feature. There is nothing to publish — `vendor:publish` is not part of installing them.
-- Do not create application-side migrations for `cache`, `cache_locks`, `sessions`, `jobs`, `job_batches`, or `failed_jobs`. Those tables already exist under their `app_` names, and a second migration fails with "table already exists".
-- Remove Laravel's skeleton migrations from the application when adopting this module: `0001_01_01_000001_create_cache_table.php`, `0001_01_01_000002_create_jobs_table.php`, and the `sessions` block inside `0001_01_01_000000_create_users_table.php`.
+- Do not create application-side migrations for `users`, `cache`, `cache_locks`, `sessions`, `jobs`, `job_batches`, or `failed_jobs`. Those tables already exist under their `app_` names, and a second migration fails with "table already exists". `password_reset_tokens` needs no table at all.
+- Remove Laravel's skeleton migrations from the application when adopting this module: `0001_01_01_000000_create_users_table.php` in full — users, password reset tokens and sessions all ship here — along with `0001_01_01_000001_create_cache_table.php` and `0001_01_01_000002_create_jobs_table.php`.
 - `app_migrations` has no migration file of its own. The migrator creates it from `database.migrations.table`.
 - Run migrations with `{{ $assist->artisanCommand('migrate') }}`.
 
@@ -43,6 +43,7 @@
 - Instead treat table names as directory structure with every subsequent element being a logical subdirectory (e.g. `users`, `users_profiles`, `users_profiles_addresses`, etc.).
 
 ## Enums
+- Enums owned by this module are prefixed with "ESystem" (e.g. `ESystemVaultDetail`) and their cases are numbered from 100000 up, so the enums of an application, numbered from one, never collide with them in a shared column.
 - All enums should be native PHP enum classes.
 - All enums should be placed in the `app/Enums` directory.
 - It's reasonable to add a subdirectory to the `app/Enums` directory to organize related enums together.
@@ -77,8 +78,57 @@
 - When only the token value is known (an incoming link, a request header), resolve it with the `token()` helper, which returns the shared `Fnp\ElStart\Services\TokenService`.
 - `token()->find($value, $type = null, $validOnly = true)` returns the `AppToken` record, `token()->findTarget(...)` returns the model it is attached to. Both look across every model and return null when nothing matches.
 
+## Dictionary
+- `app_dictionary` writes down what the numbers in `_eid` columns mean, one row per enum case: the `entity` the enum is known as, the `name` of the case in kebab-case, and the `value` it is backed by.
+- `entity` is the class map alias of the enum where it has one — the enums of this module are written down as `token.type` and `vault.detail` — and its class name where it has none. Give an enum an alias in `defineClassMap()` and the dictionary names it the way the rest of the database does.
+- Query it with `AppDictionary::ofEnum(ETokenType::class)`, which resolves the alias itself, so nothing has to know which of the two is in the column.
+- It is a copy, never a source. The enums stay authoritative and nothing reads the table back into PHP — it is there for whatever looks at the database without the application in front of it: a report, a query by hand, a tool that only speaks SQL.
+- Add the `Fnp\ElStart\Features\ModuleDictionary` feature to a module and return its integer backed enums from `defineDictionary()`. Anything else is refused when the enums are gathered.
+- Nothing of this runs at boot. The feature answers the `ElStartDictionary` on demand group, so `store()` is what asks every module for its enums, through `ElModuleService::initOnDemand()`. A request that never writes the dictionary never pays for it.
+- A migration of this module writes the dictionary once, so a fresh database can answer for its own columns from the start. Migrations run once and enums keep changing, so store it again whenever they do.
+- `app(DictionaryService::class)->store()` is what writes the rows — from a deploy step, a command, a seeder, or an application migration holding that one line. It is safe to run again: rows are upserted, and a case that no longer exists is dropped.
+- Only registered enums are touched, so rows belonging to anything else are left where they are.
+
+## Users
+- `Fnp\ElStart\Models\AppUser` replaces the `App\Models\User` Laravel scaffolds, and `auth.providers.users.model` is overridden to point at it. Delete the scaffolded model rather than keeping two.
+- It is a plain `Authenticatable` with `Notifiable`, the `hashed` password cast, and the `HasTokens` and `HasVault` traits of this module already on it.
+- **There is no `email` column and no `name` column.** `app_users` holds `email_hash`, a keyed hash of the address, and both the address and the name live in the vault of the user under `ESystemVaultDetail::Email` and `ESystemVaultDetail::Name`. What is left in the table identifies an account without saying whose it is. Never add either column back.
+- Hash with `AppUser::hashEmail($address)`, which lowercases and trims first, so one address is always one hash. It is keyed with the application key, so a stolen table cannot be walked through a list of addresses.
+- Read them as ordinary attributes — `$user->name` and `$user->email` — which come out of the vault, so anything written for a Laravel user keeps working. Mail routing goes through `$user->email` as usual, and a queue worker unlocked as the system user reads both fine.
+- Both attributes are null when the vault cannot be read, rather than throwing, so a locked vault never breaks a template or a notification. Call `$user->vaultValue(ESystemVaultDetail::Email)` where "not readable" has to be told apart from "not set".
+- Writing them is `putVault(ESystemVaultDetail::Name, $name)`; the attributes are read only, and assigning `$user->name` sets nothing.
+- Every address a user had before goes into the vault as well, under `ESystemVaultDetail::EmailHistory`. Read it with `$user->previous_emails`: oldest first, each entry an `email` and the `until` it stopped being theirs. `changeEmail()` is what appends to it, and it grows without a bound.
+- An old address opens nothing. Only the current hash is in the table, so nobody logs in with an address they used to have.
+- Look a user up with `app(UserService::class)->findByEmail($address)`, never with `where('email', ...)`. Guards take `['email_hash' => AppUser::hashEmail($address), 'password' => $password]`.
+- **There is no `remember_token` column and no password reset table.** Both live in `app_tokens` under `Fnp\ElStart\Enums\ESystemTokenType`, alongside every other token of the user.
+- Remember me works through `getRememberToken()` and `setRememberToken()` on the model, which read and write `app_tokens` — one token per user, replaced on every login, exactly as the column behaved. Nothing in the guard changes.
+- Change a password with `changePassword($user, $password)`, which rewrites the vault key pair first and drops every remember me token, so a browser left signed in elsewhere has to sign in again.
+- Reset a forgotten one with `startPasswordReset($user)` — it returns the token in the clear for the notification to carry and stores only its digest — and then `resetPassword($token, $password)`, which spends the token and returns the user, or null when it is unknown or expired.
+- Laravel's password broker is not wired up and cannot be: it queries an `email` column and writes addresses into its own table. Use `UserService`, and send the notification from the application with the token it hands back.
+- Rotating the application key makes every hash unreachable and nobody can log in. Recompute the hashes from the vault — as the system user, over every entry — before the key changes.
+- Extend it when the application needs columns or behaviour of its own — `class User extends AppUser` — and point `auth.providers.users.model` at the subclass from the application module's `defineConfigOverride()`, which boots after this one.
+- Add columns with an application migration that alters `app_users`, never with a second create migration.
+- `AppUser::factory()` makes users the way registering one does: the row carries the hash, and the name and the address go into the vault. States are `withEmail()`, `withName()`, `verified()` and `unverified()`, and `AppUserFactory::$password` is the password they all get.
+- Creating one leaves the vault unlocked as that user, since that is the only moment their password is in hand. Making a second user opens the vault as them instead, so read the details of one before making the next.
+- A subclass with a factory of its own should extend `AppUserFactory` and set `$model`, or it will not know to fill the vault.
+- Users are soft deleted, so `app_users` carries `deleted_at` and every query hides the deleted ones. Reach for `withTrashed()` where they have to show up, and remember that a soft deleted user cannot log in.
+- `Fnp\ElStart\Services\UserService` covers the moments a user record and a session meet: `register()`, `login()`, `findByEmail()`, `changeEmail()`, `changePassword()`, `verifyEmail()`, `startPasswordReset()`, `resetPassword()` and `delete()`. Resolve it with `app(UserService::class)`.
+- `verifyEmail($user)` marks the address confirmed and returns whether that was the moment it happened — a user who is verified already is left alone and announces nothing. It needs no vault: the address is not read, only the column saying it was reached is written.
+- Verification links are signed against the hash, through `getEmailForVerification()`. The link is followed by somebody who is not logged in, whose vault is shut, so anything keyed on the address itself would not work.
+- Changing an address changes the hash that salts the vault key, so `changeEmail()` asks for the password and rewrites the key pair. Never write `email_hash` by hand.
+- All three hold the plain password for the instant it exists, which is the only instant the vault can be unlocked, so registering and logging in unlock it. A key pair that fails to open leaves the vault locked rather than refusing a valid password — check `vault()->isUnlocked()` where entries are actually needed.
+- `register()` mass assigns, so further columns have to be fillable on the model. It leaves the user logged out and fires `Illuminate\Auth\Events\Registered`.
+- Every state change announces itself with an `Auditable` event in `Fnp\ElStart\Events`: `UserRegistered`, `UserLoggedIn`, `UserLoginFailed`, `UserEmailChanged`, `UserEmailVerified`, `UserPasswordChanged`, `UserPasswordResetRequested`, `UserPasswordReset` and `UserDeleted`. The audit listener records them in `app_audit` without any wiring.
+- They carry the account by its id and uuid, and an address only ever as its hash — `UserLoginFailed` counts attempts against an account without writing down what was typed. Never put a name, an address, a password or a token into one.
+- `register()` fires the Laravel `Registered` event as well, so mail verification and anything else listening for it keeps working.
+- `login()` regenerates the session id, and `delete()` ends the session when users delete themselves. Tokens and vault entries survive a soft delete, because the record can come back — drop them explicitly where a deleted account has to lose its access at once.
+
 ## Audit
 - Any event implementing `Fnp\ElStart\Contracts\Auditable` is recorded in `app_audit` by the listener this module registers on `*`. Nothing else needs wiring: dispatch the event and return the payload from `audit()`.
+- The `event` column holds the class map alias where there is one, so the trail reads as `user.registered` or `vault.opened` rather than a namespace. Query it by alias, and filter a whole area with `where('event', 'like', 'vault.%')`.
+- Every event of this module has an alias in `ElStartModule::defineClassMap()`, and a test fails if one is added without. Give an application event an alias there too, or it lands in the trail as a fully qualified class name.
+- An alias is written into rows, so it is permanent. Renaming one rewrites what history says happened.
+- An entry that cannot be written never breaks the dispatch that caused it. It goes to the log at debug level with a `[APP] ` prefix, naming the event and carrying the exception — and never the payload, which belongs in the table rather than in a log file.
 - Every row records who was there in `user_id`: the id of the logged in user, or null when nobody was — a console command, a queued job, a schedule, anything running as the system.
 - Keep secrets out of `audit()`. The payload is stored unencrypted; record identifiers and what changed, never the value it changed to.
 

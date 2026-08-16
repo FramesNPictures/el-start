@@ -3,6 +3,7 @@
 namespace Fnp\ElStart\Services;
 
 use Fnp\ElStart\Contracts\VaultDetail;
+use Fnp\ElStart\Contracts\VaultIdentity;
 use Fnp\ElStart\Events\VaultClosed;
 use Fnp\ElStart\Events\VaultOpened;
 use Fnp\ElStart\Events\VaultRekeyed;
@@ -622,23 +623,30 @@ class VaultService
     /**
      * Derive the key wrapping the secret key of a user record.
      *
-     * The id and the email address salt the derivation, the pepper keeps it
-     * tied to a secret of the application, and Argon2id makes guessing the
-     * password expensive.
+     * The id and the identity of the model salt the derivation, the pepper
+     * keeps it tied to a secret of the application, and Argon2id makes
+     * guessing the password expensive.
      *
-     * @throws VaultException When the user has no id or no email address
+     * A `VaultIdentity` says what to salt with — `AppUser` gives the hash of
+     * its email address rather than the address itself, which the vault is the
+     * one holding. Anything else falls back to its email column.
+     *
+     * @throws VaultException When the user has no id or nothing to salt with
      */
     protected function deriveKey(Model $user, #[SensitiveParameter] string $password): string
     {
         $id = $user->getKey();
-        $email = Str::lower((string) $user->getAttribute('email'));
 
-        if ($id === null || $email === '') {
+        $identity = $user instanceof VaultIdentity
+            ? $user->vaultIdentity()
+            : Str::lower((string) $user->getAttribute('email'));
+
+        if ($id === null || $identity === '') {
             throw VaultException::unidentified($user);
         }
 
         $salt = substr(
-            hash_hmac('sha256', $id . '|' . $email, $this->pepper(), true),
+            hash_hmac('sha256', $id . '|' . $identity, $this->pepper(), true),
             0,
             SODIUM_CRYPTO_PWHASH_SALTBYTES,
         );

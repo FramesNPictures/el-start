@@ -8,6 +8,26 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Support\Carbon;
 
+/**
+ * A token attached to any model through a polymorphic relation: an api key, a
+ * remember me token, the digest of a password reset, whatever the application
+ * numbers in its own `TokenType` enum.
+ *
+ * @property int $id
+ * @property string $tokenable_type Class map alias of the model it belongs to
+ * @property int $tokenable_id
+ * @property int $type_eid Case value of the token type enum, never cast
+ * @property string $value
+ * @property Carbon|null $expires_at Null for a token that never expires
+ * @property Carbon $created_at
+ * @property Carbon $updated_at
+ * @property-read Model|null $tokenable
+ *
+ * @method static Builder expired()
+ * @method static Builder ofType(TokenType $type)
+ * @method static Builder valid()
+ * @method static Builder withValue(string $value)
+ */
 class AppToken extends Model
 {
     const TABLE = 'app_tokens';

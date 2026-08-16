@@ -4,10 +4,29 @@ namespace Fnp\ElStart\Models;
 
 use Fnp\ElStart\Contracts\VaultDetail;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
+use Illuminate\Support\Carbon;
 
+/**
+ * One detail of one model, encrypted with a key of its own. That key is sealed
+ * to every reader in `app_vault_grants`, so the row on its own opens to nobody.
+ *
+ * @property int $id
+ * @property string $vaultable_type Class map alias of the model it belongs to
+ * @property int $vaultable_id
+ * @property int $detail_eid Case value of the vault detail enum, never cast
+ * @property string $value The ciphertext, hidden from array and JSON output
+ * @property Carbon $created_at
+ * @property Carbon $updated_at
+ * @property-read Model|null $vaultable
+ * @property-read Collection<int, AppVaultGrant> $grants
+ *
+ * @method static Builder for(Model $model)
+ * @method static Builder ofDetail(VaultDetail $detail)
+ */
 class AppVault extends Model
 {
     const TABLE = 'app_vault';

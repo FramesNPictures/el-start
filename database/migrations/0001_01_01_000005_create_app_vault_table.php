@@ -22,7 +22,7 @@ return new class() extends Migration
         Schema::create(AppVault::TABLE, function (Blueprint $table): void {
             $table->id();
             $table->morphs('vaultable');
-            $table->unsignedSmallInteger('detail_eid');
+            $table->unsignedInteger('detail_eid');
             $table->text('value');
             $table->timestamps();
 

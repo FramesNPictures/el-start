@@ -206,7 +206,7 @@ it('audits a share with who was let in but not what they may read', function ():
     $entry = vault()->put($this->user, EVaultDetailStub::Pin, 'the value itself');
     vault()->share($this->user, EVaultDetailStub::Pin, $reader);
 
-    $audit = AppAudit::query()->where('event', VaultShared::class)->first();
+    $audit = AppAudit::query()->where('event', 'vault.shared')->first();
 
     expect($audit->payload)->toBe([
         'vaultable' => UserStub::class,
@@ -255,12 +255,12 @@ it('records the events in the audit table', function (): void {
     vault()->remove($this->user, EVaultDetailStub::Pin);
     vault()->lock();
 
+    // Opening and closing are not audited: they happen on every login and
+    // every logout, and would bury what was actually done with the vault.
     expect(AppAudit::query()->orderBy('id')->pluck('event')->all())->toBe([
-        VaultOpened::class,
-        VaultUpdated::class,
-        VaultRekeyed::class,
-        VaultRemoved::class,
-        VaultClosed::class,
+        'vault.updated',
+        'vault.rekeyed',
+        'vault.removed',
     ]);
 });
 
@@ -274,17 +274,17 @@ it('records who was there, and nobody when there was nobody', function (): void 
 
     expect(AppAudit::query()->pluck('user_id')->unique()->all())->toBe([null]);
 
-    // The same run behind a logged in user is filed against them, and the
-    // payload still says which key pair did the reading.
+    // The same work behind a logged in user is filed against them, whichever
+    // key pair actually did it.
     Auth::shouldReceive('check')->andReturnTrue();
     Auth::shouldReceive('id')->andReturn($this->user->id);
 
     vault()->unlockAsSystem();
+    vault()->remove($this->user, EVaultDetailStub::Pin);
 
-    $entry = AppAudit::query()->where('event', VaultOpened::class)->orderByDesc('id')->first();
+    $entry = AppAudit::query()->where('event', 'vault.removed')->orderByDesc('id')->first();
 
-    expect($entry->user_id)->toBe($this->user->id)
-        ->and($entry->payload['identity'])->toBe(AppVaultGrant::SYSTEM_TYPE);
+    expect($entry->user_id)->toBe($this->user->id);
 });
 
 it('never writes a secret into the audit trail', function (): void {
@@ -306,7 +306,7 @@ it('audits a write with what changed but not what it became', function (): void 
     vault()->unlock($this->user, 'correct horse');
     $entry = vault()->put($note, EVaultDetailStub::Note, 'meet at noon');
 
-    $audit = AppAudit::query()->where('event', VaultUpdated::class)->first();
+    $audit = AppAudit::query()->where('event', 'vault.updated')->first();
 
     expect($audit->payload)->toBe([
         'vaultable' => TokenableStub::class,
