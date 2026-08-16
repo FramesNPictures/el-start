@@ -41,6 +41,8 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $deleted_at
  * @property-read Collection<int, AppToken> $tokens
  * @property-read Collection<int, AppUserEmail> $previousEmails
+ *
+ * @method static AppUserFactory factory($count = null, $state = [])
  */
 class AppUser extends Authenticatable
 {
