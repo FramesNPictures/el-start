@@ -3,13 +3,11 @@
 namespace Fnp\ElStart\Tests\Stubs;
 
 use Fnp\ElStart\Traits\HasTokens;
-use Fnp\ElStart\Traits\HasVault;
 use Illuminate\Database\Eloquent\Model;
 
 class TokenableStub extends Model
 {
     use HasTokens;
-    use HasVault;
 
     const TABLE = 'stub_tokenables';
 

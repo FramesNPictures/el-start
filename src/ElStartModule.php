@@ -12,7 +12,6 @@ use Fnp\ElModule\Features\ModuleSingletons;
 use Fnp\ElStart\Data\PageModel;
 use Fnp\ElStart\Data\SiteModel;
 use Fnp\ElStart\Enums\ESystemTokenType;
-use Fnp\ElStart\Enums\ESystemVaultDetail;
 use Fnp\ElStart\Events\UserDeleted;
 use Fnp\ElStart\Events\UserEmailChanged;
 use Fnp\ElStart\Events\UserEmailVerified;
@@ -22,22 +21,12 @@ use Fnp\ElStart\Events\UserPasswordChanged;
 use Fnp\ElStart\Events\UserPasswordReset;
 use Fnp\ElStart\Events\UserPasswordResetRequested;
 use Fnp\ElStart\Events\UserRegistered;
-use Fnp\ElStart\Events\VaultClosed;
-use Fnp\ElStart\Events\VaultOpened;
-use Fnp\ElStart\Events\VaultRekeyed;
-use Fnp\ElStart\Events\VaultRemoved;
-use Fnp\ElStart\Events\VaultRevoked;
-use Fnp\ElStart\Events\VaultShared;
-use Fnp\ElStart\Events\VaultUpdated;
 use Fnp\ElStart\Features\ModuleDictionary;
 use Fnp\ElStart\Listeners\AuditEventListener;
-use Fnp\ElStart\Listeners\VaultLogoutListener;
 use Fnp\ElStart\Models\AppUser;
 use Fnp\ElStart\Services\DictionaryService;
 use Fnp\ElStart\Services\TokenService;
 use Fnp\ElStart\Services\UserService;
-use Fnp\ElStart\Services\VaultService;
-use Illuminate\Auth\Events\Logout;
 
 class ElStartModule extends ElModule
 {
@@ -68,14 +57,6 @@ class ElStartModule extends ElModule
             'user.password-reset' => UserPasswordReset::class,
             'user.deleted' => UserDeleted::class,
 
-            'vault.opened' => VaultOpened::class,
-            'vault.closed' => VaultClosed::class,
-            'vault.updated' => VaultUpdated::class,
-            'vault.removed' => VaultRemoved::class,
-            'vault.shared' => VaultShared::class,
-            'vault.revoked' => VaultRevoked::class,
-            'vault.rekeyed' => VaultRekeyed::class,
-
             // Models
             // ------
             'user' => AppUser::class,
@@ -84,8 +65,7 @@ class ElStartModule extends ElModule
             // -----
             // What `app_dictionary` writes them down as, so the table names
             // them the way the rest of the database does.
-            'system-token-type' => ESystemTokenType::class,
-            'system-valult-detail' => ESystemVaultDetail::class,
+            'token.type' => ESystemTokenType::class,
         ];
     }
 
@@ -110,7 +90,6 @@ class ElStartModule extends ElModule
     {
         return [
             ESystemTokenType::class,
-            ESystemVaultDetail::class,
         ];
     }
 
@@ -118,7 +97,6 @@ class ElStartModule extends ElModule
     {
         return [
             '*' => AuditEventListener::class,
-            Logout::class => VaultLogoutListener::class,
         ];
     }
 
@@ -144,7 +122,6 @@ class ElStartModule extends ElModule
             SiteModel::class => SiteModel::class,
             TokenService::class => TokenService::class,
             UserService::class => UserService::class,
-            VaultService::class => VaultService::class,
         ];
     }
 }

@@ -1,8 +1,8 @@
 <?php
 
 use Fnp\ElModule\Helpers\HClassMap;
+use Fnp\ElStart\Events\UserLoggedIn;
 use Fnp\ElStart\Events\UserRegistered;
-use Fnp\ElStart\Events\VaultOpened;
 use Fnp\ElStart\Models\AppUser;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Facades\File;
@@ -27,7 +27,7 @@ it('aliases every event of this module', function (): void {
 
 it('groups the aliases by what they belong to', function (): void {
     expect(HClassMap::getAlias(UserRegistered::class))->toBe('user.registered')
-        ->and(HClassMap::getAlias(VaultOpened::class))->toBe('vault.opened')
+        ->and(HClassMap::getAlias(UserLoggedIn::class))->toBe('user.logged-in')
         ->and(array_keys(Relation::morphMap()))
         ->each->toMatch('/^[a-z]+(\.[a-z-]+)?$/');
 });

@@ -1,12 +1,9 @@
 <?php
 
 use Fnp\ElStart\Enums\ESystemTokenType;
-use Fnp\ElStart\Exceptions\VaultException;
 use Fnp\ElStart\Models\AppToken;
 use Fnp\ElStart\Models\AppUser;
 use Fnp\ElStart\Services\UserService;
-use Fnp\ElStart\Services\VaultService;
-use Fnp\ElStart\Tests\Stubs\EVaultDetailStub;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -14,20 +11,8 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Schema;
 
 beforeEach(function (): void {
-    // Keep the key derivation cheap, the cost is not what these tests check.
-    VaultService::useDerivationCost(1, 8192);
-
     $this->users = app(UserService::class);
     $this->user = $this->users->register('Example', 'user@example.test', 'correct horse');
-});
-
-afterEach(function (): void {
-    VaultService::useDerivationCost(
-        SODIUM_CRYPTO_PWHASH_OPSLIMIT_INTERACTIVE,
-        SODIUM_CRYPTO_PWHASH_MEMLIMIT_INTERACTIVE,
-    );
-
-    VaultService::useSystemKeys(null, null);
 });
 
 it('has no column for either token', function (): void {
@@ -66,7 +51,6 @@ it('drops the remember me token when it is emptied', function (): void {
 });
 
 it('remembers a login through the tokens table', function (): void {
-    vault()->lock();
     Auth::logout();
 
     $this->users->login('user@example.test', 'correct horse', remember: true);
@@ -78,23 +62,19 @@ it('remembers a login through the tokens table', function (): void {
         ->and(Auth::user()->getRememberToken())->toBe($token->value);
 });
 
-it('changes a password and rewrites the vault key pair', function (): void {
-    $this->user->putVault(EVaultDetailStub::Pin, '1234');
+it('changes a password', function (): void {
     $this->user->setRememberToken('a-remembered-token');
 
     $this->users->changePassword($this->user, 'battery staple');
 
     expect(Hash::check('battery staple', $this->user->fresh()->password))->toBeTrue()
-        ->and($this->user->vaultValue(EVaultDetailStub::Pin))->toBe('1234')
         // A browser left logged in elsewhere has to sign in again.
         ->and($this->user->getRememberToken())->toBeNull();
 
-    vault()->lock();
     Auth::logout();
 
     expect($this->users->login('user@example.test', 'correct horse'))->toBeNull()
-        ->and($this->users->login('user@example.test', 'battery staple'))->not->toBeNull()
-        ->and($this->user->vaultValue(EVaultDetailStub::Pin))->toBe('1234');
+        ->and($this->users->login('user@example.test', 'battery staple'))->not->toBeNull();
 });
 
 it('hands out a reset token without storing it', function (): void {
@@ -124,7 +104,6 @@ it('takes the expiry from the auth config', function (): void {
 
 it('resets a password with the token', function (): void {
     $token = $this->users->startPasswordReset($this->user);
-    vault()->lock();
 
     $user = $this->users->resetPassword($token, 'battery staple');
 
@@ -147,36 +126,14 @@ it('turns down an unknown or expired token', function (): void {
         ->and(Hash::check('correct horse', $this->user->fresh()->password))->toBeTrue();
 });
 
-it('leaves the vault closed on a reset nobody can recover', function (): void {
-    $this->user->putVault(EVaultDetailStub::Pin, '1234');
+it('drops the remember me tokens of a reset', function (): void {
+    $this->user->setRememberToken('a-remembered-token');
     $token = $this->users->startPasswordReset($this->user);
-    vault()->lock();
 
     $this->users->resetPassword($token, 'battery staple');
 
-    // The account works again, the entries of the old key pair do not.
-    $user = $this->users->login('user@example.test', 'battery staple');
-
-    expect($user)->not->toBeNull()
-        ->and(fn () => $user->vaultValue(EVaultDetailStub::Pin))->toThrow(VaultException::class);
-});
-
-it('hands the vault over on a reset run as the system user', function (): void {
-    $keys = VaultService::generateSystemKeys();
-    VaultService::useSystemKeys($keys['public'], $keys['secret']);
-
-    // Stored while the system key is registered, so it is sealed to it too.
-    $this->users->changeEmail($this->user, 'user@example.test', 'correct horse');
-    $this->user->putVault(EVaultDetailStub::Pin, '1234');
-
-    $token = $this->users->startPasswordReset($this->user);
-    vault()->lock();
-    vault()->unlockAsSystem();
-
-    $this->users->resetPassword($token, 'battery staple');
-
-    vault()->lock();
-    $user = $this->users->login('user@example.test', 'battery staple');
-
-    expect($user->vaultValue(EVaultDetailStub::Pin))->toBe('1234');
+    expect($this->user->getRememberToken())->toBeNull()
+        ->and(AppToken::count())->toBe(0)
+        // And the account logs in with the new password.
+        ->and($this->users->login('user@example.test', 'battery staple'))->not->toBeNull();
 });

@@ -5,8 +5,7 @@ namespace Fnp\ElStart\Events;
 class UserEmailVerified extends UserEvent
 {
     /**
-     * When the address was confirmed. The address itself stays where it is —
-     * in the vault.
+     * When the address was confirmed, which is all that changed about it.
      */
     public function audit(): array
     {

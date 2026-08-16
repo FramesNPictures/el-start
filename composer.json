@@ -9,7 +9,6 @@
         }
     ],
     "require": {
-        "ext-sodium": "*",
         "framesnpictures/el-module": ">=v1.0"
     },
     "autoload": {

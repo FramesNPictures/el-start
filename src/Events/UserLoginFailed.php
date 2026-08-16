@@ -7,21 +7,20 @@ use Fnp\ElStart\Contracts\Auditable;
 class UserLoginFailed implements Auditable
 {
     /**
-     * @param  string  $emailHash  Hash of the address that was tried
+     * @param  string  $email  Address that was tried
      */
     public function __construct(
-        public readonly string $emailHash,
+        public readonly string $email,
     ) {}
 
     /**
-     * What was tried, by the same hash the table is searched by — enough to
-     * count the attempts against one account without writing the address of
-     * it anywhere.
+     * What was tried, which is enough to count the attempts against one
+     * account. Never what was typed as the password.
      */
     public function audit(): array
     {
         return [
-            'email_hash' => $this->emailHash,
+            'email' => $this->email,
         ];
     }
 }

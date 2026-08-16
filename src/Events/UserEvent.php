@@ -8,9 +8,8 @@ use Fnp\ElStart\Models\AppUser;
 /**
  * What every user event of this module carries: the account it happened to.
  *
- * Never the name, never the address, never a password and never a token — the
- * name and the address are in the vault precisely so they stay out of a table
- * like `app_audit`.
+ * Never a password and never a token: an audit row says what happened to
+ * which account, not what the account is worth to whoever reads it.
  */
 abstract class UserEvent implements Auditable
 {

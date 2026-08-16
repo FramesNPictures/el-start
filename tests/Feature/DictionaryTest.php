@@ -1,7 +1,6 @@
 <?php
 
 use Fnp\ElStart\Enums\ESystemTokenType;
-use Fnp\ElStart\Enums\ESystemVaultDetail;
 use Fnp\ElStart\Models\AppDictionary;
 use Fnp\ElStart\Services\DictionaryService;
 use Fnp\ElStart\Tests\Stubs\DictionaryStubModule;
@@ -34,9 +33,7 @@ it('resolves out of the container as a single instance', function (): void {
 
 it('is written by the migration that ships with it', function (): void {
     // Nothing in this test stored anything: migrating did.
-    expect(AppDictionary::query()->ofEnum(ESystemVaultDetail::class)->count())
-        ->toBe(count(ESystemVaultDetail::cases()))
-        ->and(AppDictionary::query()->ofEnum(ESystemTokenType::class)->count())
+    expect(AppDictionary::query()->ofEnum(ESystemTokenType::class)->count())
         ->toBe(count(ESystemTokenType::cases()));
 });
 
@@ -44,8 +41,7 @@ it('gathers the enums of every module that offers them', function (): void {
     $this->dictionary->store();
 
     expect($this->dictionary->registered())
-        ->toContain(ESystemTokenType::class)
-        ->toContain(ESystemVaultDetail::class);
+        ->toContain(ESystemTokenType::class);
 });
 
 it('registers an enum once, however often it is asked', function (): void {
@@ -69,13 +65,12 @@ it('takes integer backed enums only', function (): void {
 it('writes every case down against its class and name', function (): void {
     $written = $this->dictionary->store();
 
-    expect($written)->toBeGreaterThanOrEqual(count(ESystemVaultDetail::cases()))
-        ->and(AppDictionary::query()->ofEnum(ESystemVaultDetail::class)
+    expect($written)->toBeGreaterThanOrEqual(count(ESystemTokenType::cases()))
+        ->and(AppDictionary::query()->ofEnum(ESystemTokenType::class)
             ->orderBy('name')->pluck('value', 'name')->all())
         ->toBe([
-            'email' => ESystemVaultDetail::Email->value,
-            'email-history' => ESystemVaultDetail::EmailHistory->value,
-            'name' => ESystemVaultDetail::Name->value,
+            'password-reset' => ESystemTokenType::PasswordReset->value,
+            'remember' => ESystemTokenType::Remember->value,
         ]);
 });
 
@@ -85,8 +80,6 @@ it('writes an enum down by its class map alias where it has one', function (): v
     // The enums of this module are aliased, so that is what the table says.
     expect(AppDictionary::query()->where('entity', 'token.type')->count())
         ->toBe(count(ESystemTokenType::cases()))
-        ->and(AppDictionary::query()->where('entity', 'vault.detail')->count())
-        ->toBe(count(ESystemVaultDetail::cases()))
         ->and(AppDictionary::query()->where('entity', ESystemTokenType::class)->count())->toBe(0)
         // And are still found by the class they were registered as.
         ->and(AppDictionary::query()->ofEnum(ESystemTokenType::class)->count())

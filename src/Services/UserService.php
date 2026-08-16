@@ -3,7 +3,6 @@
 namespace Fnp\ElStart\Services;
 
 use Fnp\ElStart\Enums\ESystemTokenType;
-use Fnp\ElStart\Enums\ESystemVaultDetail;
 use Fnp\ElStart\Events\UserDeleted;
 use Fnp\ElStart\Events\UserEmailChanged;
 use Fnp\ElStart\Events\UserEmailVerified;
@@ -13,7 +12,6 @@ use Fnp\ElStart\Events\UserPasswordChanged;
 use Fnp\ElStart\Events\UserPasswordReset;
 use Fnp\ElStart\Events\UserPasswordResetRequested;
 use Fnp\ElStart\Events\UserRegistered;
-use Fnp\ElStart\Exceptions\VaultException;
 use Fnp\ElStart\Models\AppUser;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Auth\Events\Verified;
@@ -28,68 +26,57 @@ use SensitiveParameter;
  * The moments a user record and a session meet: registering, logging in,
  * changing the address they are known by, and going away.
  *
- * Each of them holds the plain password for the only instant it exists, which
- * is also the only instant the vault can be unlocked — so all of them do it.
- * The email address never reaches a column: the table stores its hash, and the
- * address itself goes into the vault of the user.
+ * Addresses are normalised on the way in — lowercased and trimmed — so one
+ * address is one account no matter how it was typed.
  */
 class UserService
 {
     /**
      * Change the address a user is known by.
      *
-     * The hash salts their vault key, so the key pair has to be wrapped anew,
-     * which is why the password is asked for. Call it with the vault unlocked
-     * as that same user.
+     * The one they had is kept in `app_users_emails` rather than dropped, so a
+     * request naming an old address still finds the account. Moving a user to
+     * the address they already have does nothing and announces nothing.
      *
      * @param  AppUser  $user  User to rename
      * @param  string  $email  New email address
-     * @param  string  $password  Current password of the user
-     *
-     * @throws VaultException When the vault is locked
      */
-    public function changeEmail(AppUser $user, string $email, #[SensitiveParameter] string $password): AppUser
+    public function changeEmail(AppUser $user, string $email): AppUser
     {
-        $from = (string) $user->email_hash;
-        $previous = $user->email;
+        $from = (string) $user->email;
+        $to = $this->normalizeEmail($email);
 
-        $user->email_hash = $this->model()::hashEmail($email);
-
-        // Derives the key from the new hash, so the order matters.
-        app(VaultService::class)->rekey($user, $password);
-
-        $user->save();
-        $user->putVault(ESystemVaultDetail::Email, $email);
-
-        // The one they had goes to the back of the vault rather than nowhere.
-        if ($previous !== null && $previous !== $email) {
-            $user->putVault(ESystemVaultDetail::EmailHistory, [
-                ...$user->previous_emails,
-                ['email' => $previous, 'until' => Carbon::now()->toDateTimeString()],
-            ]);
+        if ($from === $to) {
+            return $user;
         }
 
-        Event::dispatch(new UserEmailChanged($user, $from, $user->email_hash));
+        $user->email = $to;
+        $user->save();
+
+        $user->previousEmails()->create([
+            'email' => $from,
+            'until' => Carbon::now(),
+        ]);
+
+        // Anything holding the user has the addresses of a moment ago.
+        $user->unsetRelation('previousEmails');
+
+        Event::dispatch(new UserEmailChanged($user, $from, $to));
 
         return $user;
     }
 
     /**
-     * Change the password of a user who still knows the old one.
+     * Change the password of a user.
      *
-     * The password wraps their vault key pair, so it is rewritten first — call
-     * it with the vault unlocked as that same user. Every remember me token
-     * goes, so a browser left logged in elsewhere has to sign in again.
+     * Every remember me token goes, so a browser left logged in elsewhere has
+     * to sign in again.
      *
      * @param  AppUser  $user  User to give a new password
      * @param  string  $password  New password
-     *
-     * @throws VaultException When the vault is locked
      */
     public function changePassword(AppUser $user, #[SensitiveParameter] string $password): AppUser
     {
-        app(VaultService::class)->rekey($user, $password);
-
         $user->password = $password;
         $user->save();
 
@@ -104,9 +91,10 @@ class UserService
     /**
      * Soft delete a user, ending their session when it is their own.
      *
-     * Their tokens and vault entries are left alone: the record can come back
-     * with `restore()`, and the data has to be there when it does. Drop them
-     * explicitly where a deleted account has to lose its access at once.
+     * Their tokens and the addresses they had are left alone: the record can
+     * come back with `restore()`, and the data has to be there when it does.
+     * Drop them explicitly where a deleted account has to lose its access at
+     * once.
      *
      * @param  AppUser  $user  User to delete
      * @return bool Whether the record was deleted
@@ -118,7 +106,6 @@ class UserService
         $deleted = (bool) $user->delete();
 
         if ($deleted && $isSelf) {
-            // Logging out locks the vault through the listener of this module.
             Auth::logout();
         }
 
@@ -130,7 +117,7 @@ class UserService
     }
 
     /**
-     * Find a user by their email address, through its hash.
+     * Find a user by their email address.
      *
      * @param  string  $email  Address to look up
      * @param  bool  $withTrashed  Whether to look among the deleted ones too
@@ -141,12 +128,12 @@ class UserService
 
         return $model::query()
             ->when($withTrashed, fn ($query) => $query->withTrashed())
-            ->where('email_hash', $model::hashEmail($email))
+            ->where('email', $this->normalizeEmail($email))
             ->first();
     }
 
     /**
-     * Log a user in and unlock their vault.
+     * Log a user in.
      *
      * @param  string  $email  Email address of the user
      * @param  string  $password  Password only the user knows
@@ -156,12 +143,12 @@ class UserService
     public function login(string $email, #[SensitiveParameter] string $password, bool $remember = false): ?AppUser
     {
         $credentials = [
-            'email_hash' => $this->model()::hashEmail($email),
+            'email' => $this->normalizeEmail($email),
             'password' => $password,
         ];
 
         if (! Auth::attempt($credentials, $remember)) {
-            Event::dispatch(new UserLoginFailed($credentials['email_hash']));
+            Event::dispatch(new UserLoginFailed($credentials['email']));
 
             return null;
         }
@@ -171,9 +158,7 @@ class UserService
 
         $user = Auth::user();
 
-        $unlocked = $this->unlockVault($user, $password);
-
-        Event::dispatch(new UserLoggedIn($user, $remember, $unlocked));
+        Event::dispatch(new UserLoggedIn($user, $remember));
 
         return $user;
     }
@@ -190,14 +175,13 @@ class UserService
     }
 
     /**
-     * Register a user, mint their vault key pair and put their email address
-     * in it.
+     * Register a user.
      *
      * The user is not logged in — call `login()` after it, or `Auth::login()`
      * where the password should not be checked again.
      *
      * @param  string  $name  Name of the user
-     * @param  string  $email  Email address, unique across the table by its hash
+     * @param  string  $email  Email address, unique across the table
      * @param  string  $password  Password only the user knows, hashed on the way in
      * @param  array<string, mixed>  $attributes  Any further columns the model makes fillable
      */
@@ -212,15 +196,14 @@ class UserService
 
         $user = new $model();
 
-        $user->fill([...$attributes, 'password' => $password]);
-        $user->email_hash = $model::hashEmail($email);
-        $user->save();
+        $user->fill([
+            ...$attributes,
+            'name' => $name,
+            'email' => $this->normalizeEmail($email),
+            'password' => $password,
+        ]);
 
-        // Who the account belongs to is only ever readable through the vault.
-        if ($this->unlockVault($user, $password)) {
-            $user->putVault(ESystemVaultDetail::Email, $email);
-            $user->putVault(ESystemVaultDetail::Name, $name);
-        }
+        $user->save();
 
         // The Laravel one first, so anything listening for it keeps working.
         Event::dispatch(new Registered($user));
@@ -231,11 +214,6 @@ class UserService
 
     /**
      * Set a new password from a reset token, which is spent in the process.
-     *
-     * There is no old password here, so the vault key pair cannot be rewritten
-     * — the system user is the one that can hand it over, and does when this
-     * runs unlocked as it. Anywhere else the entries of that user stay closed
-     * until a recovery runs, while the account itself works again.
      *
      * @param  string  $token  Token handed out by `startPasswordReset()`
      * @param  string  $password  New password
@@ -252,20 +230,13 @@ class UserService
             return null;
         }
 
-        $vault = app(VaultService::class);
-        $recovered = $vault->isSystem();
-
-        if ($recovered) {
-            $vault->recover($user, $password);
-        }
-
         $user->password = $password;
         $user->save();
 
         $user->removeTokens(ESystemTokenType::PasswordReset);
         $user->removeTokens(ESystemTokenType::Remember);
 
-        Event::dispatch(new UserPasswordReset($user, $recovered));
+        Event::dispatch(new UserPasswordReset($user));
 
         return $user;
     }
@@ -303,9 +274,7 @@ class UserService
     /**
      * Mark the address of a user as confirmed.
      *
-     * Nothing here needs the vault: the address is not read, only the column
-     * saying it was reached is written. A user who is already verified is left
-     * alone and announces nothing.
+     * A user who is already verified is left alone and announces nothing.
      *
      * @param  AppUser  $user  User whose address was reached
      * @return bool Whether this was the moment it got verified
@@ -335,20 +304,11 @@ class UserService
     }
 
     /**
-     * Unlock the vault of a user, leaving it locked when its key pair does not
-     * open. A vault nobody can read is no reason to refuse a valid password —
-     * check `vault()->isUnlocked()` where the entries are actually needed.
-     *
-     * @return bool Whether the vault was opened
+     * The form an address is stored and searched by, so one address is one
+     * account however it was typed.
      */
-    protected function unlockVault(AppUser $user, #[SensitiveParameter] string $password): bool
+    protected function normalizeEmail(string $email): string
     {
-        try {
-            app(VaultService::class)->unlock($user, $password);
-        } catch (VaultException) {
-            return false;
-        }
-
-        return true;
+        return Str::lower(trim($email));
     }
 }

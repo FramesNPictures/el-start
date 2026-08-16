@@ -10,28 +10,14 @@ use Fnp\ElStart\Events\UserPasswordReset;
 use Fnp\ElStart\Events\UserPasswordResetRequested;
 use Fnp\ElStart\Events\UserRegistered;
 use Fnp\ElStart\Models\AppAudit;
-use Fnp\ElStart\Models\AppUser;
 use Fnp\ElStart\Services\UserService;
-use Fnp\ElStart\Services\VaultService;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Auth\Events\Verified;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Event;
 
 beforeEach(function (): void {
-    // Keep the key derivation cheap, the cost is not what these tests check.
-    VaultService::useDerivationCost(1, 8192);
-
     $this->users = app(UserService::class);
-});
-
-afterEach(function (): void {
-    VaultService::useDerivationCost(
-        SODIUM_CRYPTO_PWHASH_OPSLIMIT_INTERACTIVE,
-        SODIUM_CRYPTO_PWHASH_MEMLIMIT_INTERACTIVE,
-    );
-
-    VaultService::useSystemKeys(null, null);
 });
 
 it('announces a registration, next to the Laravel one', function (): void {
@@ -43,9 +29,8 @@ it('announces a registration, next to the Laravel one', function (): void {
     Event::assertDispatched(Registered::class);
 });
 
-it('announces a login and whether the vault came with it', function (): void {
+it('announces a login', function (): void {
     $this->users->register('Example', 'user@example.test', 'correct horse');
-    vault()->lock();
     Auth::logout();
 
     Event::fake([UserLoggedIn::class]);
@@ -53,13 +38,11 @@ it('announces a login and whether the vault came with it', function (): void {
     $user = $this->users->login('user@example.test', 'correct horse', remember: true);
 
     Event::assertDispatched(UserLoggedIn::class, fn (UserLoggedIn $event): bool => $event->user->is($user)
-        && $event->remember === true
-        && $event->vaultUnlocked === true);
+        && $event->remember === true);
 });
 
-it('announces a login that failed, by the hash that was tried', function (): void {
+it('announces a login that failed, by the address that was tried', function (): void {
     $this->users->register('Example', 'user@example.test', 'correct horse');
-    vault()->lock();
     Auth::logout();
 
     Event::fake([UserLoginFailed::class, UserLoggedIn::class]);
@@ -72,7 +55,7 @@ it('announces a login that failed, by the hash that was tried', function (): voi
 
     Event::assertDispatched(
         UserLoginFailed::class,
-        fn (UserLoginFailed $event): bool => $event->emailHash === AppUser::hashEmail('user@example.test'),
+        fn (UserLoginFailed $event): bool => $event->email === 'user@example.test',
     );
 });
 
@@ -86,16 +69,26 @@ it('announces a deletion', function (): void {
     Event::assertDispatched(UserDeleted::class, fn (UserDeleted $event): bool => $event->user->is($user));
 });
 
-it('announces a change of address with both hashes', function (): void {
+it('announces a change of address with both of them', function (): void {
     $user = $this->users->register('Example', 'user@example.test', 'correct horse');
 
     Event::fake([UserEmailChanged::class]);
 
-    $this->users->changeEmail($user, 'renamed@example.test', 'correct horse');
+    $this->users->changeEmail($user, 'renamed@example.test');
 
     Event::assertDispatched(UserEmailChanged::class, fn (UserEmailChanged $event): bool => $event->user->is($user)
-        && $event->from === AppUser::hashEmail('user@example.test')
-        && $event->to === AppUser::hashEmail('renamed@example.test'));
+        && $event->from === 'user@example.test'
+        && $event->to === 'renamed@example.test');
+});
+
+it('stays quiet when the address does not actually change', function (): void {
+    $user = $this->users->register('Example', 'user@example.test', 'correct horse');
+
+    Event::fake([UserEmailChanged::class]);
+
+    $this->users->changeEmail($user, 'USER@example.test');
+
+    Event::assertNotDispatched(UserEmailChanged::class);
 });
 
 it('announces a password change', function (): void {
@@ -128,27 +121,7 @@ it('announces a reset being asked for and carried out', function (): void {
 
     Event::assertDispatched(
         UserPasswordReset::class,
-        fn (UserPasswordReset $event): bool => $event->user->is($user) && $event->recovered === false,
-    );
-});
-
-it('says when a reset handed the vault over as well', function (): void {
-    $keys = VaultService::generateSystemKeys();
-    VaultService::useSystemKeys($keys['public'], $keys['secret']);
-
-    $user = $this->users->register('Example', 'user@example.test', 'correct horse');
-    $token = $this->users->startPasswordReset($user);
-
-    vault()->lock();
-    vault()->unlockAsSystem();
-
-    Event::fake([UserPasswordReset::class]);
-
-    $this->users->resetPassword($token, 'battery staple');
-
-    Event::assertDispatched(
-        UserPasswordReset::class,
-        fn (UserPasswordReset $event): bool => $event->recovered === true,
+        fn (UserPasswordReset $event): bool => $event->user->is($user),
     );
 });
 
@@ -162,7 +135,7 @@ it('stays quiet when a reset token leads nowhere', function (): void {
 
 it('records the events in the audit table', function (): void {
     $user = $this->users->register('Example', 'user@example.test', 'correct horse');
-    $this->users->changeEmail($user, 'renamed@example.test', 'correct horse');
+    $this->users->changeEmail($user, 'renamed@example.test');
     $this->users->changePassword($user, 'battery staple');
     $this->users->delete($user);
 
@@ -174,26 +147,24 @@ it('records the events in the audit table', function (): void {
         ->and($events)->toContain('user.deleted');
 });
 
-it('never writes a name, an address or a password into the audit trail', function (): void {
+it('never writes a name, a password or a token into the audit trail', function (): void {
     $user = $this->users->register('Example Name', 'user@example.test', 'the password itself');
-    $this->users->changeEmail($user, 'renamed@example.test', 'the password itself');
-    $this->users->startPasswordReset($user);
+    $this->users->changeEmail($user, 'renamed@example.test');
+    $token = $this->users->startPasswordReset($user);
     $this->users->changePassword($user, 'another password');
     $this->users->delete($user);
 
-    vault()->lock();
     Auth::logout();
     $this->users->login('renamed@example.test', 'wrong horse');
 
     $payloads = json_encode(AppAudit::pluck('payload')->all());
 
-    expect($payloads)->not->toContain('user@example.test')
-        ->and($payloads)->not->toContain('renamed@example.test')
-        ->and($payloads)->not->toContain('Example Name')
+    expect($payloads)->not->toContain('Example Name')
         ->and($payloads)->not->toContain('the password itself')
         ->and($payloads)->not->toContain('another password')
-        // The hashes are what stands in for the addresses.
-        ->and($payloads)->toContain(AppUser::hashEmail('renamed@example.test'));
+        ->and($payloads)->not->toContain($token)
+        // The addresses of a change are the point of recording it.
+        ->and($payloads)->toContain('renamed@example.test');
 });
 
 it('audits a registration by the ids of the account alone', function (): void {
@@ -228,18 +199,7 @@ it('announces an address being verified, once', function (): void {
     );
 });
 
-it('verifies an address without opening the vault', function (): void {
-    $user = $this->users->register('Example', 'user@example.test', 'correct horse');
-    vault()->lock();
-
-    expect($this->users->verifyEmail($user))->toBeTrue()
-        ->and($user->hasVerifiedEmail())->toBeTrue()
-        // Signed links are keyed by the hash, which needs no vault to read.
-        ->and($user->getEmailForVerification())->toBe(AppUser::hashEmail('user@example.test'))
-        ->and($user->getEmailForVerification())->not->toContain('@');
-});
-
-it('audits a verification without the address', function (): void {
+it('audits a verification by when it happened', function (): void {
     $user = $this->users->register('Example', 'user@example.test', 'correct horse');
 
     $this->users->verifyEmail($user);
@@ -248,6 +208,5 @@ it('audits a verification without the address', function (): void {
 
     expect($audit->payload['id'])->toBe($user->id)
         ->and($audit->payload['uuid'])->toBe($user->uuid)
-        ->and($audit->payload['verified_at'])->toMatch('/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/')
-        ->and(json_encode($audit->payload))->not->toContain('user@example.test');
+        ->and($audit->payload['verified_at'])->toMatch('/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/');
 });

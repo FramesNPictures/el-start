@@ -8,8 +8,8 @@ class UserEmailChanged extends UserEvent
 {
     /**
      * @param  AppUser  $user  User that was renamed
-     * @param  string  $from  Hash of the address it was
-     * @param  string  $to  Hash of the address it is
+     * @param  string  $from  Address it was
+     * @param  string  $to  Address it is
      */
     public function __construct(
         AppUser $user,
@@ -20,8 +20,7 @@ class UserEmailChanged extends UserEvent
     }
 
     /**
-     * Both addresses as their hashes, so the change can be followed without
-     * either of them being written down.
+     * Both addresses, which is the whole of what changed.
      */
     public function audit(): array
     {

@@ -22,7 +22,8 @@ return new class() extends Migration
         Schema::create(AppUser::TABLE, function (Blueprint $table): void {
             $table->id();
             $table->uuid('uuid')->unique();
-            $table->string('email_hash', 64)->unique();
+            $table->string('name');
+            $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
             $table->timestamps();
